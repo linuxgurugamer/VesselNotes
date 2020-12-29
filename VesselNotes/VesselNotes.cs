@@ -49,18 +49,26 @@ namespace VesselNotes
 
         private Vector2 noteVector = Vector2.zero;
         private Vector2 titleVector;
+        private Vector2 logVector = Vector2.zero;
+        private Vector2 logTitleVector;
         int selectedNote = 0;
-        int selectedId = 0;
+        int selectedNoteId = 0;
         string currentNoteForComparision = "";
         string currentTitleForComparision = "";
 
+        int selectedLog = 0;
+        int selectedLogId = 0;
+        string currentLogNoteForComparision = "";
+        string currentLogTitleForComparision = "";
+
         List<NOTE> notes = new List<NOTE>();
+        List<NOTE> vesselLog = new List<NOTE>();
 
         private bool _visible;
 
         const float HEIGHT = 500f;
         const float WIDTH = 500f;
-
+        const float LOGWIDTHADD = 200f;
 
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Vessel Notes")]
@@ -72,10 +80,13 @@ namespace VesselNotes
         const float NOTESELWIDTH = 150f;
         const float NOTES_SEL_DATA = NOTESELWIDTH - 10;
         const float NOTESCROLLVIEWWIDTH = WIDTH - NOTESELWIDTH;
-        const float SCROLLVIEWHEIGHT = HEIGHT - 30;
+        const float SCROLLVIEWHEIGHT = HEIGHT - 50;
         const float SCROLLVIEWENTRY = SCROLLVIEWHEIGHT - 25;
         const float NOTEWIDTH = NOTESCROLLVIEWWIDTH - 10;
         const float NOTEHEIGHT = SCROLLVIEWHEIGHT - 10;
+
+        const float LOGSCROLLVIEWWIDTH = NOTESCROLLVIEWWIDTH + LOGWIDTHADD;
+        const float LOGVIEWENTRY = SCROLLVIEWENTRY + LOGWIDTHADD;
 
         //static Log Log;
 
@@ -90,13 +101,24 @@ namespace VesselNotes
         void SetSelectedNote(int i)
         {
             selectedNote = i;
-            selectedId = notes[i].id;
+            selectedNoteId = notes[i].id;
             currentNoteForComparision = notes[i].note;
             currentTitleForComparision = notes[i].title;
+        }
+        void SetSelectedLog(int i)
+        {
+            if (vesselLog.Count == 0)
+                return;
+            selectedLog = i;
+            selectedLogId = vesselLog[i].id;
+            currentLogNoteForComparision = vesselLog[i].note;
+            currentLogTitleForComparision = vesselLog[i].title;
         }
 
         GUIStyle myStyle = null;
         GUIStyle buttonFontSel, buttonFont;
+
+        bool logMode = false;
 
         /// <summary>
         /// Notes window
@@ -104,9 +126,101 @@ namespace VesselNotes
         /// <param name="windowId"></param>
         private void NotesWindow(int windowId)
         {
+            if (logMode)
+                LogEditWindow();
+            else
+                NoteEditWindow();
+
+            ShowControls();
+
+            GUI.DragWindow();
+
+        }
+
+        private void LogEditWindow()
+        {
             // Set the control name for later usage.
             GUI.SetNextControlName("notes");
             GUILayout.BeginHorizontal();
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.BeginVertical(GUILayout.Width(NOTESELWIDTH));
+            logTitleVector = GUILayout.BeginScrollView(logTitleVector, GUILayout.Width(NOTESELWIDTH), GUILayout.Height(SCROLLVIEWHEIGHT));
+
+            for (int i = 0; i < vesselLog.Count; i++)
+            {
+                if (GUILayout.Button(vesselLog[i].title,
+                    (selectedLogId == vesselLog[i].id) ? buttonFontSel : buttonFont, GUILayout.Width(NOTES_SEL_DATA)))
+                {
+                    SetSelectedLog(i);
+                }
+            }
+            // following in case note is deleted
+            if (selectedLog >= vesselLog.Count)
+            {
+                SetSelectedLog(0);
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical(GUILayout.Width(NOTESELWIDTH));
+            GUILayout.BeginHorizontal();
+            if (vesselLog.Count > 0)
+            {
+                GUILayout.Label("Title: ");
+                vesselLog[selectedLog].title = GUILayout.TextField(vesselLog[selectedLog].title);
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.EndHorizontal();
+
+            // Text area with scroll bar
+            logVector = GUILayout.BeginScrollView(noteVector,
+                GUILayout.Width(LOGSCROLLVIEWWIDTH), GUILayout.Height(LOGVIEWENTRY));
+            if (vesselLog.Count > 0)
+                vesselLog[selectedLog].note = GUILayout.TextArea(vesselLog[selectedLog].note, myStyle,
+                GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(LOGVIEWENTRY));
+            GUILayout.EndScrollView();
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
+            if (vesselLog.Count > 0 &&
+                (currentLogNoteForComparision != vesselLog[selectedLog].note ||
+                currentLogTitleForComparision != vesselLog[selectedLog].title))
+            {
+                SyncAllNotes();
+            }
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("New Log Entry"))
+            {
+                vesselLog.Add(new NOTE("Log #" + (vesselLog.Count+1).ToString(), VesselLog.GetLogInfo(vessel)));
+                SetSelectedLog(vesselLog.Count + 1);
+                selectedLog = vesselLog.Count - 1;
+                selectedLogId = vesselLog[selectedLog].id;
+            }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Close Log"))
+            {
+                logMode = false;
+                _windowRect.width -= LOGWIDTHADD;
+
+            }
+            GUILayout.FlexibleSpace(); 
+            GUILayout.EndHorizontal();
+
+        }
+        private void NoteEditWindow()
+        { 
+            // Set the control name for later usage.
+            GUI.SetNextControlName("notes");
+            GUILayout.BeginHorizontal();
+            soloNote = GUILayout.Toggle(soloNote, "Solo note (not shared with other command modules)");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Vessel Log", GUILayout.Width(90)))
+            {
+                logMode = true;
+                _windowRect.width += LOGWIDTHADD;
+            }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical(GUILayout.Width(NOTESELWIDTH));
@@ -115,7 +229,7 @@ namespace VesselNotes
             for (int i = 0; i < notes.Count; i++)
             {
                 if (GUILayout.Button(notes[i].title, 
-                    (selectedId == notes[i].id) ? buttonFontSel : buttonFont, GUILayout.Width(NOTES_SEL_DATA)))
+                    (selectedNoteId == notes[i].id) ? buttonFontSel : buttonFont, GUILayout.Width(NOTES_SEL_DATA)))
                 {
                     SetSelectedNote(i);
                 }
@@ -156,7 +270,7 @@ namespace VesselNotes
                 notes.Add(new NOTE("Note #" +notes.Count.ToString(), ""));
                 SetSelectedNote(notes.Count + 1);
                 selectedNote = notes.Count - 1;
-                selectedId = notes[selectedNote].id;
+                selectedNoteId = notes[selectedNote].id;
             }
             if (GUILayout.Button("Delete Note"))
             {
@@ -174,17 +288,18 @@ namespace VesselNotes
             if (GUILayout.Button("Close"))
                 _visible = false;
             GUILayout.EndHorizontal();
+        }
 
+        void ShowControls()
+        {
             // Close the notes window.
             if (GUI.Button(new Rect(2f, 2f, 13f, 13f), "X"))
-            {
                 Toggle();
-            }
+
             // Toggle current skin.
             if (GUI.Button(new Rect(20f, 2f, 22f, 16f), "S"))
-            {
                 _useKspSkin = !_useKspSkin;
-            }
+
             // buttons for change the font size.
             if (GUI.Button(new Rect(80f, 2f, 15f, 15f), "-"))
             {
@@ -206,8 +321,6 @@ namespace VesselNotes
                 myStyle.richText = true;
 
             }
-
-            GUI.DragWindow();
         }
 
         private void OnGUI()

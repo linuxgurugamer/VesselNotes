@@ -11,22 +11,35 @@ namespace VesselNotes
         List<VesselNotes> allNotesModules;
         internal  void SyncAllNotes()
         {
-            if (soloNote)
-                return;
-
-            if (allNotesModules == null)
-                allNotesModules = vessel.FindPartModulesImplementing<VesselNotes>();
-
-            for (int i = 0; i < allNotesModules.Count; i++)
+            if (!soloNote)
             {
-                if (!allNotesModules[i] == this && !allNotesModules[i].soloNote)
+                if (allNotesModules == null)
+                    allNotesModules = vessel.FindPartModulesImplementing<VesselNotes>();
+
+                for (int i = 0; i < allNotesModules.Count; i++)
                 {
-                    allNotesModules[i].notes.Clear();
-                    for (int n = 0; n < notes.Count; n++)
+                    if (!allNotesModules[i] == this && !allNotesModules[i].soloNote)
                     {
-                        allNotesModules[i].notes.Add(new NOTE(notes[n].title, notes[n].note, notes[n].id));
+                        allNotesModules[i].notes.Clear();
+                        for (int n = 0; n < notes.Count; n++)
+                        {
+                            allNotesModules[i].notes.Add(new NOTE(notes[n].title, notes[n].note, notes[n].id));
+                        }
                     }
                 }
+
+                for (int i = 0; i < allNotesModules.Count; i++)
+                {
+                    if (!allNotesModules[i] == this)
+                    {
+                        allNotesModules[i].vesselLog.Clear();
+                        for (int n = 0; n < notes.Count; n++)
+                        {
+                            allNotesModules[i].vesselLog.Add(new NOTE(vesselLog[n].title, vesselLog[n].note, notes[n].id));
+                        }
+                    }
+                }
+
             }
         }
     }

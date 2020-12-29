@@ -78,6 +78,7 @@
     <Compile Include="RegisterToolbar.cs" />
     <Compile Include="SaveLoad.cs" />
     <Compile Include="SyncAllModules.cs" />
+    <Compile Include="VesselLog.cs" />
     <Compile Include="VesselNotes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

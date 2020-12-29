@@ -31,6 +31,24 @@ namespace VesselNotes
                         }
                     }
                 }
+
+                ConfigNode[] logs = vesselNode.GetNodes("VESSELLOG");
+                if (logs != null)
+                {
+                    foreach (var n in logs)
+                    {
+                        string title = "";
+                        if (n.TryGetValue("TITLE", ref title))
+                        {
+                            string note = "";
+                            if (n.TryGetValue("NOTE", ref note))
+                            {
+                                notes.Add(new NOTE(title, note));
+                            }
+                        }
+                    }
+                }
+
             }
         }
 
@@ -45,7 +63,17 @@ namespace VesselNotes
                 note.AddValue("TITLE", n.title);
                 vesselNode.AddNode(note);
             }
+ //           node.AddNode(vesselNode);
+
+            foreach (var n in vesselLog)
+            {
+                ConfigNode note = new ConfigNode("VESSELLOG");
+                note.AddValue("NOTE", n.note);
+                note.AddValue("TITLE", n.title);
+                vesselNode.AddNode(note);
+            }
             node.AddNode(vesselNode);
+
         }
     }
 }
