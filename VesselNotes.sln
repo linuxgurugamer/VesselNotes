@@ -5,11 +5,6 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VesselNotes", "VesselNotes\VesselNotes.csproj", "{2C8D5E92-19CD-499C-916D-BCB41FBC42FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "notesRPM", "notesRPM\notesRPM.csproj", "{8B2F9614-11C3-45E3-AA5C-FBEDBFDA3B2D}"
-	ProjectSection(ProjectDependencies) = postProject
-		{2C8D5E92-19CD-499C-916D-BCB41FBC42FC} = {2C8D5E92-19CD-499C-916D-BCB41FBC42FC}
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EF3911BC-A119-4306-B5B7-39E4B4C6B2BA}"
 	ProjectSection(SolutionItems) = preProject
 		buildRelease.bat = buildRelease.bat
@@ -17,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		deploy.bat = deploy.bat
 		jenkins.txt = jenkins.txt
 		README.md = README.md
+		TODO.txt = TODO.txt
 		VesselNotes.version = VesselNotes.version
 	EndProjectSection
 EndProject
@@ -31,10 +27,6 @@ Global
 		{2C8D5E92-19CD-499C-916D-BCB41FBC42FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C8D5E92-19CD-499C-916D-BCB41FBC42FC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2C8D5E92-19CD-499C-916D-BCB41FBC42FC}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{8B2F9614-11C3-45E3-AA5C-FBEDBFDA3B2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8B2F9614-11C3-45E3-AA5C-FBEDBFDA3B2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8B2F9614-11C3-45E3-AA5C-FBEDBFDA3B2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8B2F9614-11C3-45E3-AA5C-FBEDBFDA3B2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -31,8 +31,10 @@ using System.IO;
 using System.Reflection;
 using KSP.IO;
 using UnityEngine;
+using KSP_Log;
 
-namespace VesselNotes
+
+namespace VesselNotesNS
 {
     public class VesselLog
     {
@@ -41,7 +43,7 @@ namespace VesselNotes
         {
             if (HighLogic.LoadedSceneIsEditor)
                 return "";
-            string _vesselInfo;
+            string _vesselInfo = "";
 
             double _seconds = Planetarium.GetUniversalTime();
             _seconds = Math.Abs(_seconds);
@@ -79,6 +81,7 @@ namespace VesselNotes
                   diff.Minutes.ToString("00"),
                   diff.Seconds.ToString("00"));
             string _situation = Vessel.GetSituationString(FlightGlobals.ActiveVessel);
+            if (v != null)
             _vesselInfo =
                 string.Format("\n{0}\n{1} --- Year: {2} Day: {3} Time: {4}:{5:00}:{6:00}\n" + "MET: {7} --- Status: {8}\n{0}\n",
                     _separator, v.GetDisplayName(), _ryears, _rdays, _hours, _minutes, _seconds, _formatted, _situation);
