@@ -300,7 +300,14 @@ namespace VesselNotesNS
             //    GUILayout.Label(" ");
             GUILayout.FlexibleSpace();
             HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog = GUILayout.Toggle(HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog, "Autolog");
+            GUILayout.Label(" ");
+            if (HighLogic.LoadedSceneIsFlight && GUILayout.Button("Vessel Notes", GUILayout.Width(90)))
+            {
+                logMode = false;
+                _windowRect.width = WIDTH; ;
+                _windowRect.height = HEIGHT;
 
+            }
             GUILayout.EndHorizontal();
 
             // Text area with scroll bar
@@ -328,9 +335,7 @@ namespace VesselNotesNS
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close Log", GUILayout.Width(90)))
             {
-                logMode = false;
-                _windowRect.width = WIDTH; ;
-                _windowRect.height = HEIGHT;
+                CloseWin();
 
             }
             GUILayout.FlexibleSpace();
@@ -444,12 +449,20 @@ namespace VesselNotesNS
             }
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close", GUILayout.Width(90)))
-                _visible = false;
+            {
+                CloseWin();
+            }
             GUILayout.FlexibleSpace();
 
             GUILayout.EndHorizontal();
         }
 
+        void CloseWin()
+        {
+            highlight = false;
+            part.highlighter.ConstantOff();
+            _visible = false;
+        }
         void ShowControls()
         {
             // Close the notes window.
