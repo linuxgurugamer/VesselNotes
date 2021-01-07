@@ -7,7 +7,7 @@ Description
 
 This mod is designed to let you enter notes and keep logs for each vessel.  Notes can be entered in the editor (VAB/SPH) and will carry over into flight.  
 
-When in flight, you can keep notes and a log of the vessel
+When in flight, you can keep notes and a log of the vessel.  When a vessel is recovered, the logs will be written out to files in the save directory of the game, in a directory called VesselLogs
 
 This mod is added to every part with a ModuleCommand (ie:  pods, etc), but NOT the external seat.
 

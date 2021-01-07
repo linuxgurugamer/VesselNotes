@@ -1,4 +1,4 @@
 To Do
 
-Get autolog working
+
 Add highlighting of command module for which ever note file you are editor

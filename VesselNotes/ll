@@ -1,0 +1,61 @@
+﻿        internal void WatchForLanding()
+        {
+            if (!VesselNotes.vesselInFlight)
+                return;
+            Log.Info("LandingMonitor: WatchForLanding, time: " + Planetarium.GetUniversalTime().ToString("n2") + ",  vesselsLoaded.Count: " + FlightGlobals.fetch.vesselsLoaded.Count().ToString());
+            for (int x = FlightGlobals.fetch.vesselsLoaded.Count() - 1; x >= 0; x--)
+            {
+                var v = FlightGlobals.fetch.vesselsLoaded[x];
+                VesselStatus vesselStatus = null;
+                try
+                {
+                    vesselStatus = vesselLandedDict[v.id];
+                }
+                catch (KeyNotFoundException)
+                {
+                    vesselStatus = new VesselStatus(v);
+                    vesselLandedDict.Add(v.id, vesselStatus);
+                }
+                if (vesselStatus == null)
+                {
+                    Log.Error("WatchForLanding, vesselStatus is null");
+                }
+                if (v.Landed != vesselStatus.Landed)
+                    vesselStatus.SetLandedTime(v.Landed);
+                if (v.Splashed != vesselStatus.Splashed)
+                    vesselStatus.SetSplashedTime(v.Splashed);
+
+                /* Flying definition
+                   1. Altitude > 50m
+                   2.  Not touching the ground for 5 seconds                   
+                 */
+                if (v.heightFromTerrain >= HighLogic.CurrentGame.Parameters.CustomParams<KL_13>().minFlyingAltitude)
+                {
+                    Log.Info("LandingMonitor: v.heightFromTerrain: " + v.heightFromTerrain.ToString());
+                    if (!vesselStatus.Flying)
+                        vesselStatus.SetFlyingTime(true);
+
+                    if (vesselStatus.Flying &&
+                       Planetarium.GetUniversalTime() - vesselStatus.universalTime >= HighLogic.CurrentGame.Parameters.CustomParams<KL_13>().minFlyingTime)
+                    {
+                        vesselStatus.SetFlyingEvent();
+                    }
+                }
+
+                /* Landing definition
+                    1.  Touching the ground
+                    2.  speed less than 0.05
+                    3.  Stable for 5 seconds
+                */
+                if (!vesselStatus.landedEvent && v.Landed &&
+                    Planetarium.GetUniversalTime() - vesselStatus.universalTime >= HighLogic.CurrentGame.Parameters.CustomParams<KL_13>().landedStabilityTime &&
+                    v.speed < 0.05f)
+                {
+                    Log.Info("LandingMonitor: Triggering landed event");
+                    vesselStatus.landedEvent = true;
+                    vesselStatus.Flying = false;
+                    onVesselLanded(v);
+                }
+
+            }
+        }

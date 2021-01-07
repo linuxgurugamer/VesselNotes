@@ -56,7 +56,7 @@ namespace VesselNotesNS
         {
             Toggle();
         }
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Vessel Logs")]
+        [KSPEvent(guiActive = true, guiActiveEditor = false, guiName = "Vessel Logs")]
         public void ToggleVesselLogs()
         {
             Toggle();
@@ -79,11 +79,17 @@ namespace VesselNotesNS
         static GUIStyle bstyle;
 
         int noteWinId;
+        bool lastAutolog;
         void Start()
         {
             noteWinId = WindowHelper.NextWindowId("Notes-" + this.part.persistentId.ToString());
+#if DEBUG
             if (Log == null)
                 Log = new Log("VesselNotes", Log.LEVEL.INFO);
+#else
+      if (Log == null)
+                Log = new Log("VesselNotes", Log.LEVEL.ERROR);
+#endif
             foreach (var n in noteList.list)
                 if (n.noteListGuid == Guid.Empty)
                     n.noteListGuid = noteList.listGuid;
@@ -92,9 +98,12 @@ namespace VesselNotesNS
                     n.noteListGuid = noteList.listGuid;
 
             ResetEvents();
-#if false
-            InitializeLogEvents();
-#endif
+            lastAutolog = HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog;
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog && HighLogic.LoadedSceneIsFlight)
+            {
+                InitializeLogEvents();
+                    LandingMonitorStart();
+            }
         }
 
         void ResetEvents()
@@ -110,10 +119,15 @@ namespace VesselNotesNS
             GameEvents.onVesselsUndocking.Add(onVesselsUndocking);
 
             GameEvents.onPartDeCoupleNewVesselComplete.Add(onPartDeCoupleNewVesselComplete);
-            //GameEvents.onPartDeCoupleComplete.Add(onPartDeCoupleComplete);
-           // GameEvents.onPartDeCouple.Add(onPartDeCouple);
+
+            GameEvents.OnVesselRecoveryRequested.Add(onVesselRecoveryRequested);
         }
 
+        void onVesselRecoveryRequested(Vessel v)
+        {
+            SaveLogsToFile(v);
+            ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
+        }
         void onVesselDocking(uint a, uint b)
         { 
             if (a == this.vessel.persistentId || b == this.vessel.persistentId)
@@ -129,13 +143,6 @@ namespace VesselNotesNS
 
         }
 
-#if false
-        void onPartDeCouple(Part p)
-        {
-            GetAllNotesModules(true, "onPartDeCouple");
-            Log.Info("onPartDeCouple");
-        }
-#endif
         void onPartUndock(Part p)
         {
             GetAllNotesModules(true, "onPartUndock");
@@ -181,15 +188,6 @@ namespace VesselNotesNS
                 Log.Error("onPartDeCoupleNewVesselComplete, vessel  is null (possibly new vessel)");
             Log.Info("onPartDeCoupleNewVesselComplete");
         }
-#if false
-        void onPartDeCoupleComplete(Part p)
-        {
-            GetAllNotesModules(true, "onPartDeCoupleComplete");
-            if (p.vessel != vessel)
-                return;
-            Log.Info("onPartDeCoupleComplete");
-        }
-#endif
 
         void onUndock(EventReport er)
         {
@@ -237,7 +235,10 @@ namespace VesselNotesNS
         private void NotesWindow(int windowId)
         {
             if (logMode)
-                LogEditWindow();
+            {
+                if (!HighLogic.LoadedSceneIsEditor)
+                    LogEditWindow();
+            }
             else
                 NoteEditWindow();
 
@@ -293,10 +294,13 @@ namespace VesselNotesNS
             {
                 GUILayout.Label("Title: ");
                 logList.list[selectedLog].title = GUILayout.TextField(logList.list[selectedLog].title, GUILayout.Width(NOTESELWIDTH));
-                GUILayout.FlexibleSpace();
+                //GUILayout.FlexibleSpace();
             }
-            else
-                GUILayout.Label(" ");
+            //else
+            //    GUILayout.Label(" ");
+            GUILayout.FlexibleSpace();
+            HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog = GUILayout.Toggle(HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog, "Autolog");
+
             GUILayout.EndHorizontal();
 
             // Text area with scroll bar
@@ -481,6 +485,7 @@ namespace VesselNotesNS
         }
 
         bool lastKspSkin;
+        bool highlight = false;
         private void OnGUI()
         {
             if (myStyle == null || lastKspSkin != _useKspSkin)
@@ -508,6 +513,37 @@ namespace VesselNotesNS
             }
             if (_visible)
             {
+                if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().highlightPart && ClickThruBlocker.CTBWin.MouseIsOverWindow(_windowRect))
+                {
+                    if (!highlight)
+                    {
+                        highlight = true;
+                        part.highlighter.ConstantOn(XKCDColors.Yellow);
+                    }
+                }
+                else
+                {
+                    if (highlight)
+                    {
+                        highlight = false;
+                        part.highlighter.ConstantOff();
+                    }
+                }
+
+                if (lastAutolog != HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog)
+                {
+                    if (lastAutolog)
+                    {
+                        InitializeLogEvents(false);
+                        LandingMonitorStop();
+                    }
+                    else
+                    {
+                        InitializeLogEvents();
+                        LandingMonitorStart();
+                    }
+
+                }
                 if (_useKspSkin)
                     GUI.skin = HighLogic.Skin;
                 _windowRect = ClickThruBlocker.GUILayoutWindow(noteWinId, _windowRect, NotesWindow, "Vessel Notes & Logs : " + part.partInfo.title);
