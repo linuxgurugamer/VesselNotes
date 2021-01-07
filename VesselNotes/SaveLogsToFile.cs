@@ -41,7 +41,7 @@ namespace VesselNotesNS
             var dateAndTime = DateTime.Now;
             name += "-" + (dateAndTime.Year - 2000).ToString() + "." + dateAndTime.Month.ToString("D2") + "." + dateAndTime.Day.ToString("D2");
             name += "-" + (dateAndTime.Hour).ToString("D2") + "." + (dateAndTime.Minute).ToString("D2");
-            return dir + name + ".txt";
+            return dir + name;
         }
         internal void SaveLogsToFile(Vessel v)
         {
@@ -60,11 +60,11 @@ namespace VesselNotesNS
                 {
                     sbPrint.Append(n.note);
                 }
-                while (File.Exists(GetFilename(SaveDir,v, ref cnt)))
+                while (File.Exists(GetFilename(SaveDir,v, ref cnt) + ".txt"))
                 {
                     cnt++;
                 }
-                File.WriteAllText(GetFilename(SaveDir, v, ref cnt), sbPrint.ToString());
+                File.WriteAllText(GetFilename(SaveDir, v, ref cnt) + ".txt", sbPrint.ToString());
 
             }
             if (cnt == 1)
