@@ -8,7 +8,7 @@ using System.Text;
 
 namespace VesselNotesNS
 {
-    internal partial class VesselNotes : PartModule
+    internal partial class VesselNotesLogs : PartModule
     {
 
         // The font size.
@@ -82,6 +82,9 @@ namespace VesselNotesNS
         bool lastAutolog;
         void Start()
         {
+            if (vessel == null || HighLogic.LoadedSceneIsEditor || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
+                return;
+
             noteWinId = WindowHelper.NextWindowId("Notes-" + this.part.persistentId.ToString());
 #if DEBUG
             if (Log == null)
@@ -98,11 +101,15 @@ namespace VesselNotesNS
                     n.noteListGuid = noteList.listGuid;
 
             ResetEvents();
-            lastAutolog = HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog;
-            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog && HighLogic.LoadedSceneIsFlight)
+            lastAutolog = logList.autolog;
+            if (HighLogic.LoadedScene != GameScenes.EDITOR)
             {
-                InitializeLogEvents();
+                if (logList.autolog)
+                {
+                    InitializeLogEvents();
                     LandingMonitorStart();
+                }
+                StartVesselMonitoring();
             }
         }
 
@@ -125,11 +132,16 @@ namespace VesselNotesNS
 
         void onVesselRecoveryRequested(Vessel v)
         {
-            SaveLogsToFile(v);
-            ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
+            if (v == this.vessel && logList.list.Count > 0)
+            {
+                //logList.list.RemoveAt(logList.list.Count - 1);
+                SaveLogsToFile(v, this.part);
+                ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
+            }
         }
+
         void onVesselDocking(uint a, uint b)
-        { 
+        {
             if (a == this.vessel.persistentId || b == this.vessel.persistentId)
             {
                 noteList.LockAllNotes();
@@ -262,7 +274,11 @@ namespace VesselNotesNS
             GUI.backgroundColor = Color.green;
             if (GUILayout.Button("New Log Entry", bstyle))
             {
-                logList.list.Add(new NOTE("Log #" + (logList.list.Count + 1).ToString(), VesselLog.GetLogInfo(vessel), logList.listGuid));
+                string currentCrew = "";
+                if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().logCrewAlways)
+                    currentCrew = "Crew: " + getCurrentCrew(vessel);
+
+                logList.list.Add(new NOTE("Log #" + (logList.list.Count + 1).ToString(), VesselLog.GetLogInfo(vessel) + currentCrew, logList.listGuid));
                 SetSelectedLog(logList.list.Count + 1);
                 selectedLog = logList.list.Count - 1;
             }
@@ -299,7 +315,7 @@ namespace VesselNotesNS
             //else
             //    GUILayout.Label(" ");
             GUILayout.FlexibleSpace();
-            HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog = GUILayout.Toggle(HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog, "Autolog");
+            noteList.autolog = GUILayout.Toggle(noteList.autolog, "Autolog");
             GUILayout.Label(" ");
             if (HighLogic.LoadedSceneIsFlight && GUILayout.Button("Vessel Notes", GUILayout.Width(90)))
             {
@@ -333,7 +349,7 @@ namespace VesselNotesNS
                 CopyToClipboard(true, logList.list);
             }
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close Log", GUILayout.Width(90)))
+            if (GUILayout.Button("Close", GUILayout.Width(90)))
             {
                 CloseWin();
 
@@ -395,9 +411,9 @@ namespace VesselNotesNS
                 GUILayout.EndHorizontal();
             }
             // following in case note is deleted
-            if (selectedNote >= noteList.list.Count && noteList.list.Count>0)
+            if (selectedNote >= noteList.list.Count && noteList.list.Count > 0)
             {
-                SetSelectedNote(noteList.list.Count -1);
+                SetSelectedNote(noteList.list.Count - 1);
             }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
@@ -424,10 +440,11 @@ namespace VesselNotesNS
                 (currentNoteForComparision != noteList.list[selectedNote].note ||
                 currentTitleForComparision != noteList.list[selectedNote].title))
             {
-                Log.Info("Part: " + part.partInfo.name + ", currentNoteForComparision: " + currentNoteForComparision +
-                    ", noteList.list[selectedNote].note: " + noteList.list[selectedNote].note +
-                    ", currentTitleForComparision: " + currentTitleForComparision +
-                    ", noteList.list[selectedNote].title: " + noteList.list[selectedNote].title);
+                if (!HighLogic.LoadedSceneIsEditor)
+                    Log.Info("Part: " + part.partInfo.name + ", currentNoteForComparision: " + currentNoteForComparision +
+                        ", noteList.list[selectedNote].note: " + noteList.list[selectedNote].note +
+                        ", currentTitleForComparision: " + currentTitleForComparision +
+                        ", noteList.list[selectedNote].title: " + noteList.list[selectedNote].title);
                 SyncAllNotes(true, false);
             }
             GUILayout.BeginHorizontal();
@@ -462,6 +479,7 @@ namespace VesselNotesNS
             highlight = false;
             part.highlighter.ConstantOff();
             _visible = false;
+
         }
         void ShowControls()
         {
@@ -543,19 +561,21 @@ namespace VesselNotesNS
                     }
                 }
 
-                if (lastAutolog != HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog)
+                if (lastAutolog != logList.autolog)
                 {
-                    if (lastAutolog)
+                    if (!HighLogic.LoadedSceneIsEditor)
                     {
-                        InitializeLogEvents(false);
-                        LandingMonitorStop();
+                        if (lastAutolog)
+                        {
+                            InitializeLogEvents(false);
+                            LandingMonitorStop();
+                        }
+                        else
+                        {
+                            InitializeLogEvents();
+                            LandingMonitorStart();
+                        }
                     }
-                    else
-                    {
-                        InitializeLogEvents();
-                        LandingMonitorStart();
-                    }
-
                 }
                 if (_useKspSkin)
                     GUI.skin = HighLogic.Skin;

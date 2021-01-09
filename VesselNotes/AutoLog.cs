@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-using static VesselNotesNS.VesselNotes;
+using static VesselNotesNS.VesselNotesLogs;
 
 namespace VesselNotesNS
 {
-    internal partial class VesselNotes
+    internal partial class VesselNotesLogs
     {
         public enum RespondEvents
         {
@@ -70,7 +70,7 @@ namespace VesselNotesNS
                 GameEvents.onVesselOrbitClosed.Add(onVesselOrbitClosed);
                 GameEvents.onVesselOrbitEscaped.Add(onVesselOrbitEscaped);
 
-                GameEvents.onCrewKilled.Add(onCrewKilled);
+                //GameEvents.onCrewKilled.Add(onCrewKilled);
                 GameEvents.onDominantBodyChange.Add(onDominantBodyChange);
 
                 GameEvents.onKerbalPassedOutFromGeeForce.Add(onKerbalPassedOutFromGeeForce);
@@ -99,7 +99,7 @@ namespace VesselNotesNS
                 GameEvents.onVesselOrbitClosed.Remove(onVesselOrbitClosed);
                 GameEvents.onVesselOrbitEscaped.Remove(onVesselOrbitEscaped);
 
-                GameEvents.onCrewKilled.Remove(onCrewKilled);
+                //GameEvents.onCrewKilled.Remove(onCrewKilled);
                 GameEvents.onDominantBodyChange.Remove(onDominantBodyChange);
 
                 GameEvents.onKerbalPassedOutFromGeeForce.Remove(onKerbalPassedOutFromGeeForce);
@@ -154,10 +154,14 @@ namespace VesselNotesNS
         }
         void onVesselDestroy(Vessel v)
         {
+            return;
             if (v != part.vessel) return;
             string s = v.vesselName + " was destroyed";
 
             CreateLogEntry(RespondEvents.OnVesselDestruction, false, s);
+            SaveLogsToFile(v, this.part);
+            ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
+
         }
 
         void OnTriggeredDataTransmission(ScienceData sd, Vessel v, bool b)
@@ -171,59 +175,6 @@ namespace VesselNotesNS
             CreateLogEntry(RespondEvents.OnTriggeredDataTransmission, false, s, "");
         }
 
-
-
-        void AddReason(ref string current, string newreason)
-        {
-            if (current != "")
-                current += ", ";
-            current += newreason;
-        }
-        string GetTransReason(TransactionReasons tr)
-        {
-            string reason = "";
-            if ((tr & TransactionReasons.ContractAdvance) != 0)
-                AddReason(ref reason, "Contract advance");
-            if ((tr & TransactionReasons.ContractReward) != 0)
-                AddReason(ref reason, "Contract reward");
-            if ((tr & TransactionReasons.ContractPenalty) != 0)
-                AddReason(ref reason, "Contrace penalty");
-            if ((tr & TransactionReasons.VesselRollout) != 0)
-                AddReason(ref reason, "Vessel rollout");
-            if ((tr & TransactionReasons.VesselRecovery) != 0)
-                AddReason(ref reason, "Vessel recovery");
-            if ((tr & TransactionReasons.VesselLoss) != 0)
-                AddReason(ref reason, "Vessel loss");
-            if ((tr & TransactionReasons.StrategyInput) != 0)
-                AddReason(ref reason, "Strategy input");
-            if ((tr & TransactionReasons.StrategyOutput) != 0)
-                AddReason(ref reason, "Strategy output");
-            if ((tr & TransactionReasons.StrategySetup) != 0)
-                AddReason(ref reason, "Stragety setup");
-            if ((tr & TransactionReasons.ScienceTransmission) != 0)
-                AddReason(ref reason, "Science transmission");
-            if ((tr & TransactionReasons.StructureRepair) != 0)
-                AddReason(ref reason, "Structure repair");
-            if ((tr & TransactionReasons.StructureCollapse) != 0)
-                AddReason(ref reason, "Structure collapse");
-            if ((tr & TransactionReasons.StructureConstruction) != 0)
-                AddReason(ref reason, "Structure construction");
-            if ((tr & TransactionReasons.RnDTechResearch) != 0)
-                AddReason(ref reason, "RnD tech research ");
-            if ((tr & TransactionReasons.RnDPartPurchase) != 0)
-                AddReason(ref reason, "RnD part purchase");
-            if ((tr & TransactionReasons.Cheating) != 0)
-                AddReason(ref reason, "Cheating");
-            if ((tr & TransactionReasons.CrewRecruited) != 0)
-                AddReason(ref reason, "Crew recruited");
-            if ((tr & TransactionReasons.ContractDecline) != 0)
-                AddReason(ref reason, "Contract decline");
-            if ((tr & TransactionReasons.Progression) != 0)
-                AddReason(ref reason, "Progression");
-
-
-            return reason;
-        }
 
         public static bool vesselInFlight
         {
@@ -399,16 +350,15 @@ namespace VesselNotesNS
             CreateLogEntry(RespondEvents.OrbitEscaped, false, v.name + " achieved escape velocity");
         }
 
+#if false
         void onCrewKilled(EventReport report)
         {
-            if (report.origin.vessel != this.vessel) return;
             Log.Info("onCrewKilled");
-
-            CreateLogEntry(RespondEvents.CrewKilled, false, report.sender + " killed");
+            if (vessel.isActiveVessel)
+                CreateLogEntry(RespondEvents.CrewKilled, false, report.sender + " killed");
         }
+#endif
 
-        bool kerbalGoingEVA = false;
-        int kerbalTransferred = 0;
 #if false
         void onCrewTransferred(GameEvents.HostedFromToAction<ProtoCrewMember, Part> data)
         {
@@ -447,14 +397,10 @@ namespace VesselNotesNS
             }
 
             string logentry = VesselNotesNS.VesselLog.GetLogInfo(this.vessel);
-            logentry += "\r\n" + notes;
+            logentry += "\n"+ notes + "\n";
 
 #if false
-            foreach (ProtoCrewMember kerbal in FlightGlobals.ActiveVessel.GetVesselCrew())
-                {
-                    CrewMember cm = new CrewMember(kerbal.name, kerbal.type, kerbal.experienceLevel);
-                    leLocal.crewList.Add(cm);
-                }
+            string crew = getCurrentCrew(this.vessel);
 #endif
 
             logList.list.Add(new NOTE("AutoLog #" + (logList.list.Count + 1).ToString(), logentry, logList.listGuid));
@@ -472,7 +418,7 @@ namespace VesselNotesNS
             if (!HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().LandingMonitorEnabledForSave)
                 return;
             Log.Info("LandingMonitor.Start");
-            var notesModules = vessel.FindPartModulesImplementing<VesselNotes>();
+            var notesModules = vessel.FindPartModulesImplementing<VesselNotesLogs>();
             if (notesModules.Count == 0 || notesModules[0].vessel != this.vessel)
                 return;
             InvokeRepeating("WatchForLanding", 2.0f, 1f / ChecksPerSecond);
@@ -498,9 +444,8 @@ namespace VesselNotesNS
         
         internal void WatchForLanding()
         {
-            if (!VesselNotes.vesselInFlight)
+            if (!VesselNotesLogs.vesselInFlight)
                 return;
-            Log.Info("LandingMonitor: WatchForLanding");
 
             if (!landed && part.vessel.Landed)
             {

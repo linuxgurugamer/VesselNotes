@@ -9,9 +9,9 @@ using UnityEngine;
 
 namespace VesselNotesNS
 {
-    internal partial class VesselNotes
+    internal partial class VesselNotesLogs
     {
-        List<VesselNotes> allNotesModules;
+        List<VesselNotesLogs> allNotesModules;
 
         void GetAllNotesModules(bool force = false, string from = "")
         {
@@ -20,7 +20,7 @@ namespace VesselNotesNS
                 allNotesModules.Clear();
             }
             else
-                allNotesModules = new List<VesselNotes>();
+                allNotesModules = new List<VesselNotesLogs>();
 
             // Initialize the allNotesModules one time every time the module is initialized
             //if (allNotesModules == null || force)
@@ -29,8 +29,11 @@ namespace VesselNotesNS
                 {
                     if (vessel != null)
                     {
-                        //allNotesModules = vessel.FindPartModulesImplementing<VesselNotes>();
-
+#if true
+                        allNotesModules = vessel.FindPartModulesImplementing<VesselNotesLogs>();
+                        if (allNotesModules == null)
+                            allNotesModules = new List<VesselNotesLogs>();
+#else
                         allNotesModules = new List<VesselNotes>();
                         foreach (var p in vessel.Parts)
                         {
@@ -46,23 +49,22 @@ namespace VesselNotesNS
                                 }
                             }
                         }
-
+#endif
                     }
-                    else
+                }
+                else
+                {
+                    allNotesModules = new List<VesselNotesLogs>();
+                    foreach (var p in EditorLogic.SortedShipList)
                     {
-                        allNotesModules = new List<VesselNotes>();
-                        if (EditorLogic.SortedShipList != null)
-                        foreach (var p in EditorLogic.SortedShipList)
+                        if (p.Modules.Contains<VesselNotesLogs>())
                         {
-                            if (p.Modules.Contains<VesselNotes>())
+                            foreach (var m in p.Modules)
                             {
-                                foreach (var m in p.Modules)
+                                if (m is VesselNotesLogs)
                                 {
-                                    if (m is VesselNotes)
-                                    {
-                                        allNotesModules.Add(m as VesselNotes);
-                                        break;
-                                    }
+                                    allNotesModules.Add(m as VesselNotesLogs);
+                                    break;
                                 }
                             }
                         }
@@ -95,7 +97,7 @@ namespace VesselNotesNS
             doNotes = notes;
             doLogs = log;
             StartCoroutine("DoIt");
-            
+
         }
 
         static private System.Object thisLock = new System.Object();
@@ -122,7 +124,7 @@ namespace VesselNotesNS
         }
 
 
-        void SyncNotes(VesselNotes syncToNote)
+        void SyncNotes(VesselNotesLogs syncToNote)
         {
             for (int n = 0; n < noteList.list.Count; n++)
             {
@@ -138,7 +140,7 @@ namespace VesselNotesNS
                                 noteList.list[n].title,
                                 noteList.list[n].note,
                                 noteList.list[n].guid,
-                                syncToNotesList.listGuid, 
+                                syncToNotesList.listGuid,
                                 false));
                         }
                     }
@@ -153,11 +155,11 @@ namespace VesselNotesNS
                     }
                 }
             }
-            syncToNote.SetSelectedNote(syncToNote.selectedNote);            
+            syncToNote.SetSelectedNote(syncToNote.selectedNote);
         }
 
 
-        void SyncLogs(VesselNotes syncToNote)
+        void SyncLogs(VesselNotesLogs syncToNote)
         {
             for (int n = 0; n < logList.list.Count; n++)
             {

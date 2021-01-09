@@ -6,18 +6,24 @@ using System.Threading.Tasks;
 
 namespace VesselNotesNS
 {
-    internal partial class VesselNotes
+    internal partial class VesselNotesLogs
     {
         internal class NOTE_LIST
         {
             internal Guid listGuid;
             internal List<NOTE> list;
+            internal bool autolog;
 
+            // Following are not saved
             internal double lastOnLoad = double.MaxValue;
+            internal bool printed;
 
             internal NOTE_LIST()
             {
                 list = new List<NOTE>();
+                if (HighLogic.CurrentGame !=  null)
+                    autolog = HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog;
+                printed = false;
             }
             internal void ResetGuids(Guid newGuid)
             {
@@ -52,7 +58,7 @@ namespace VesselNotesNS
             internal bool privateNote;
             internal bool locked;
 
-            internal NOTE(string title, string note, Guid listGuid, bool solo, int id = -1)
+            internal NOTE(string title, string note, Guid listGuid, bool privateNote, int id = -1)
             {
                 this.title = title;
                 this.note = note;
@@ -61,12 +67,12 @@ namespace VesselNotesNS
                 else
                     this.id = id;
                 this.noteListGuid = listGuid;
-                privateNote = solo;
+                this.privateNote = privateNote;
                 locked = false;
                 guid = Guid.NewGuid();
             }
 
-            internal NOTE(string title, string note, Guid id, Guid listGuid, bool solo)
+            internal NOTE(string title, string note, Guid id, Guid listGuid, bool privateNote)
             {
                 this.title = title;
                 this.note = note;
@@ -74,7 +80,7 @@ namespace VesselNotesNS
                 guid = id;
                 noteListGuid = listGuid;
                 locked = false;
-                privateNote = solo;
+                this.privateNote = privateNote;
             }
             internal NOTE(string title, string note, Guid listGuid)
             {

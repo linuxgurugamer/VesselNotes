@@ -8,7 +8,7 @@ using System.Text;
 
 namespace VesselNotesNS
 {
-    internal partial class VesselNotes
+    internal partial class VesselNotesLogs
     {
         StringBuilder sbPrint = new StringBuilder();
 
@@ -17,7 +17,7 @@ namespace VesselNotesNS
             sbPrint.Clear();
             foreach (var n in notes)
             {
-                sbPrint.Append(n.note);
+                sbPrint.AppendLine(n.note);
                 if (!log)
                     sbPrint.AppendLine("\n-----------------------------------------------");
             }

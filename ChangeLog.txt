@@ -1,1 +1,21 @@
+ChangeLog
 
+0.0.1
+	Initial beta release
+
+0.0.1.1
+	Adjust output for the log, removing the 2nd dashed line.
+	For writing log to file, adjusted the spacing
+	added option to log current crew in every log entry
+	Fixed error when searching for modules in flight and in the eirror
+	Fixed error with multiple modules writing out all the logs for all modules
+	Added check to not write log to file if no entries
+	Excluded eva kerbals from logging code
+	Added additional code to exclude comets, asteroids and eva kerbals from all sections of the code
+	Fixed nullref in onCrewKilled
+	Make autolog a per-vessel option
+	Removed onCrewKilled
+	Removed onVesselDestroy (temporary)
+	Disabled MM patch adding module to all parts
+	Added new part: DataLog Info Drive, this part does the logging now.  
+	Fixed saving of logs and notes to preserve new lines

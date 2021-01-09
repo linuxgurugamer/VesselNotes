@@ -14,9 +14,10 @@ namespace VesselNotesNS
 {
     // [KSPAddon(KSPAddon.Startup.SpaceCentre, false)]
     //internal class LogsToFile:MonoBehaviour
-    internal partial class VesselNotes
+    internal partial class VesselNotesLogs
     {
 
+#if false
         static internal ToolbarControl toolbarControl = null;
         internal const string MODID = "VesselNotes";
         internal const string MODNAME = "Vessel Notes & Logs";
@@ -24,7 +25,6 @@ namespace VesselNotesNS
         static Rect winRect = new Rect(0, 0, 200, 300);
         bool isVisible = false;
         static bool firstTime = true;
-#if false
         void Start()
         {
             if (firstTime)
@@ -41,9 +41,11 @@ namespace VesselNotesNS
             var dateAndTime = DateTime.Now;
             name += "-" + (dateAndTime.Year - 2000).ToString() + "." + dateAndTime.Month.ToString("D2") + "." + dateAndTime.Day.ToString("D2");
             name += "-" + (dateAndTime.Hour).ToString("D2") + "." + (dateAndTime.Minute).ToString("D2");
+            if (cnt > 0)
+                name += "-" + cnt.ToString();
             return dir + name;
         }
-        internal void SaveLogsToFile(Vessel v)
+        internal void SaveLogsToFile(Vessel v, Part p)
         {
             StringBuilder sbPrint = new StringBuilder();
 
@@ -51,26 +53,31 @@ namespace VesselNotesNS
             if (!Directory.Exists(SaveDir))
                 Directory.CreateDirectory(SaveDir);
 
-            var allNotesModules = v.FindPartModulesImplementing<VesselNotes>();
-            int cnt = 1;
-            foreach (var m in allNotesModules)
+            //var allNotesModules = v.FindPartModulesImplementing<VesselNotes>();
+            var m = p.FindModuleImplementing<VesselNotesLogs>();
+
+            int cnt = 0;
+            sbPrint.Clear();
+            if (m.logList.list.Count > 0)
             {
-                sbPrint.Clear();
+                sbPrint.AppendLine("Part: " + p.partInfo.title);
+                sbPrint.AppendLine("Vessel: " + vessel.vesselName);
+
                 foreach (var n in m.logList.list)
                 {
-                    sbPrint.Append(n.note);
+                    var s = n.note.Split('\n');
+
+                    foreach (var s1 in s)
+                        sbPrint.AppendLine(s1);
                 }
-                while (File.Exists(GetFilename(SaveDir,v, ref cnt) + ".txt"))
+                while (File.Exists(GetFilename(SaveDir, v, ref cnt) + ".txt"))
                 {
+                    Log.Info("File found: " + GetFilename(SaveDir, v, ref cnt) + ".txt");
                     cnt++;
                 }
                 File.WriteAllText(GetFilename(SaveDir, v, ref cnt) + ".txt", sbPrint.ToString());
-
             }
-            if (cnt == 1)
-                ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
-            else
-                ScreenMessages.PostScreenMessage(cnt + " logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
+            ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
         }
 #if false
     void AddToolbarButton()

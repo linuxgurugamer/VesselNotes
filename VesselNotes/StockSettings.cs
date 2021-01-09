@@ -20,8 +20,8 @@ namespace VesselNotesNS
         public override bool HasPresets { get { return false; } 
         }
 
-        [GameParameters.CustomParameterUI("Auto-log Enabled",
-            toolTip = "Enables the autolog")]
+        [GameParameters.CustomParameterUI("Default Auto-log",
+            toolTip = "Default Autolog setting, can be set/unset for each vessel")]
         public bool autolog = true;
 
         [GameParameters.CustomParameterUI("Highlight part",
@@ -32,6 +32,11 @@ namespace VesselNotesNS
         [GameParameters.CustomParameterUI("Landing Monitor Enabled",
             toolTip = "Enables the landing monitor.  Disable if having performance issues (it only checks 5x/sec)")]
         public bool LandingMonitorEnabledForSave = true;
+
+        [GameParameters.CustomParameterUI("Include crew in every log entry",
+            toolTip = "Enables adding the current crew to every log entry")]
+        public bool logCrewAlways = false;
+
 
         [GameParameters.CustomFloatParameterUI("Landed stability time", minValue = 0.5f, maxValue = 5.0f,
             toolTip = "How long a vessel needs to be stable after landing before being considered <b>Landed</b>")]
