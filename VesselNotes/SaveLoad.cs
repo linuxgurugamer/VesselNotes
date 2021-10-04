@@ -12,6 +12,9 @@ namespace VesselNotesNS
         const string NODENAME = "VESSELNOTES";
         public override void OnLoad(ConfigNode node)
         {
+            if (Log == null)
+                InitLog();
+
             base.OnLoad(node);
             if (HighLogic.CurrentGame == null)
                 return;
@@ -69,31 +72,33 @@ namespace VesselNotesNS
             }
             noteList.lastOnLoad = Planetarium.GetUniversalTime();
 
-
-            ConfigNode[] logs = vesselNode.GetNodes("VESSELLOG");
-
-            if (logs != null)
+            if (vesselNode != null)
             {
 
-                foreach (var n in logs)
+                ConfigNode[] logs = vesselNode.GetNodes("VESSELLOG");
+
+                if (logs != null)
                 {
-                    bool privateNote = false;
-                    if (n.TryGetValue("PRIVATENOTE", ref privateNote))
+                    foreach (var n in logs)
                     {
-                        string title = "";
-                        if (n.TryGetValue("TITLE", ref title))
+                        bool privateNote = false;
+                        if (n.TryGetValue("PRIVATENOTE", ref privateNote))
                         {
-                            string note = "";
-                            if (n.TryGetValue("NOTE", ref note))
+                            string title = "";
+                            if (n.TryGetValue("TITLE", ref title))
                             {
-                                note = note.Replace("<EOL>", "\n");
-                                Guid guid = Guid.Empty;
-                                if (n.TryGetValue("GUID", ref guid))
+                                string note = "";
+                                if (n.TryGetValue("NOTE", ref note))
                                 {
-                                    Guid vesselId = Guid.Empty;
-                                    if (n.TryGetValue("VESSEL_ID", ref vesselId))
+                                    note = note.Replace("<EOL>", "\n");
+                                    Guid guid = Guid.Empty;
+                                    if (n.TryGetValue("GUID", ref guid))
                                     {
-                                        logList.list.Add(new NOTE(title, note, guid, vesselId, privateNote));
+                                        Guid vesselId = Guid.Empty;
+                                        if (n.TryGetValue("VESSEL_ID", ref vesselId))
+                                        {
+                                            logList.list.Add(new NOTE(title, note, guid, vesselId, privateNote));
+                                        }
                                     }
                                 }
                             }
@@ -111,9 +116,7 @@ namespace VesselNotesNS
                     return;
             }
             if (Log == null)
-                Debug.Log("VesselNotes: via Debug.Log  OnSave");
-            else
-                Log.Info("OnSave");
+                InitLog();
 
             ConfigNode vesselNode = new ConfigNode(NODENAME);
             node.AddValue("LISTGUID", noteList.listGuid);
@@ -122,7 +125,9 @@ namespace VesselNotesNS
             {
                 ConfigNode note = new ConfigNode("NOTES");
 
-                string s = n.note.Replace("\n", "<EOL>");
+                string s = "";
+                if (n.note != null)
+                    s = n.note.Replace("\n", "<EOL>");
                 note.AddValue("NOTE", s);
 
                 note.AddValue("TITLE", n.title);
@@ -132,20 +137,26 @@ namespace VesselNotesNS
                 vesselNode.AddNode(note);
             }
 
-            foreach (var n in logList.list)
+            if (!HighLogic.LoadedSceneIsEditor)
             {
-                ConfigNode note = new ConfigNode("VESSELLOG");
 
-                string s = n.note.Replace("\n", "<EOL>");
-                note.AddValue("NOTE", s);
+                foreach (var n in logList.list)
+                {
+                    ConfigNode note = new ConfigNode("VESSELLOG");
 
-                note.AddValue("TITLE", n.title);
-                note.AddValue("GUID", n.guid);
-                note.AddValue("VESSEL_ID", n.noteListGuid);
-                note.AddValue("PRIVATENOTE", n.privateNote);
-                vesselNode.AddNode(note);
+                    string s = "";
+                    if (n.note != null)
+                        s = n.note.Replace("\n", "<EOL>");
+
+                    note.AddValue("TITLE", n.title);
+                    note.AddValue("GUID", n.guid);
+                    note.AddValue("VESSEL_ID", n.noteListGuid);
+                    note.AddValue("PRIVATENOTE", n.privateNote);
+                    vesselNode.AddNode(note);
+                }
+                node.AddNode(vesselNode);
             }
-            node.AddNode(vesselNode);
+
             base.OnSave(node);
         }
     }

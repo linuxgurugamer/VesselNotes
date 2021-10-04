@@ -1,4 +1,5 @@
 To Do
 
 
-Add highlighting of command module for which ever note file you are editor
+
+In flight, putting one window on top of another causes both parts to be highlighted

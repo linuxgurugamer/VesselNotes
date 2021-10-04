@@ -18,6 +18,7 @@ namespace VesselNotesNS
         // The rectangle for main window.
         [KSPField(isPersistant = true)]
         private Rect _windowRect = new Rect(50f, 25f, WIDTH, HEIGHT);
+        private Rect _confirmRect = new Rect(0, 0, 300, 100);
 
         [KSPField(isPersistant = true)]
         private bool _useKspSkin;
@@ -36,12 +37,9 @@ namespace VesselNotesNS
         string currentLogNoteForComparision = "";
         string currentLogTitleForComparision = "";
 
-        // List<NOTE> notes = new List<NOTE>();
         internal NOTE_LIST logList = new NOTE_LIST();
-        //List<NOTE> vesselLog = new List<NOTE>();
 
         internal NOTE_LIST noteList = new NOTE_LIST();
-        //NOTE_LIST logList = new NOTE_LIST();
 
 
         private bool _visible;
@@ -78,14 +76,12 @@ namespace VesselNotesNS
         internal static Log Log = null;
         static GUIStyle bstyle;
 
-        int noteWinId;
+        int noteWinId, confirmWinId;
+        static int winCnt = 0;
         bool lastAutolog;
-        void Start()
-        {
-            if (vessel == null || HighLogic.LoadedSceneIsEditor || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
-                return;
 
-            noteWinId = WindowHelper.NextWindowId("Notes-" + this.part.persistentId.ToString());
+        internal void InitLog()
+        {
 #if DEBUG
             if (Log == null)
                 Log = new Log("VesselNotes", Log.LEVEL.INFO);
@@ -93,6 +89,18 @@ namespace VesselNotesNS
       if (Log == null)
                 Log = new Log("VesselNotes", Log.LEVEL.ERROR);
 #endif
+
+        }
+        void Start()
+        {
+            if (vessel == null || HighLogic.LoadedSceneIsEditor || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
+                return;
+
+
+            //noteWinId = WindowHelper.NextWindowId("Notes-" + this.part.persistentId.ToString());
+            noteWinId = WindowHelper.NextWindowId("Notes-" + winCnt.ToString());
+            winCnt++;
+            InitLog();
             foreach (var n in noteList.list)
                 if (n.noteListGuid == Guid.Empty)
                     n.noteListGuid = noteList.listGuid;
@@ -239,6 +247,8 @@ namespace VesselNotesNS
         GUIStyle buttonFontSel, buttonFont;
 
         bool logMode = false;
+        bool confirmDialog = false;
+        int confirmNote;
 
         /// <summary>
         /// Notes window
@@ -260,10 +270,27 @@ namespace VesselNotesNS
 
         }
 
+        private void ConfirmWindow(int winId)
+        {
+            if (GUILayout.Button("OK to lock this note: " + noteList.list[confirmNote].title))
+            {
+                noteList.list[confirmNote].privateNote = true;
+                confirmDialog = false;
+            }
+            if (GUILayout.Button("Close"))
+                confirmDialog = false;
+            HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().confirmLock =
+                GUILayout.Toggle(HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().confirmLock, "Always show this dialog when locking");
+            GUI.DragWindow();
+        }
+
         private void LogEditWindow()
         {
             // Set the control name for later usage.
             GUI.SetNextControlName("notes");
+
+            if (confirmDialog)
+                GUI.enabled = false;
             GUILayout.BeginHorizontal();
             GUILayout.EndHorizontal();
 
@@ -310,10 +337,8 @@ namespace VesselNotesNS
             {
                 GUILayout.Label("Title: ");
                 logList.list[selectedLog].title = GUILayout.TextField(logList.list[selectedLog].title, GUILayout.Width(NOTESELWIDTH));
-                //GUILayout.FlexibleSpace();
             }
-            //else
-            //    GUILayout.Label(" ");
+
             GUILayout.FlexibleSpace();
             noteList.autolog = GUILayout.Toggle(noteList.autolog, "Autolog");
             GUILayout.Label(" ");
@@ -330,8 +355,12 @@ namespace VesselNotesNS
             logVector = GUILayout.BeginScrollView(noteVector,
                 GUILayout.Width(LOGSCROLLVIEWWIDTH), GUILayout.Height(LOGVIEWENTRY));
             if (logList.list.Count > 0)
+            {
                 logList.list[selectedLog].note = GUILayout.TextArea(logList.list[selectedLog].note, myStyle,
                 GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(LOGVIEWENTRY));
+            }
+            else
+                GUILayout.Label(" ");
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
@@ -344,11 +373,14 @@ namespace VesselNotesNS
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Copy Logs to clipboard", GUILayout.Width(200)))
+            if (logList.list.Count > 0)
             {
-                CopyToClipboard(true, logList.list);
+                if (GUILayout.Button("Copy Logs to clipboard", GUILayout.Width(200)))
+                {
+                    CopyToClipboard(true, logList.list);
+                }
+                GUILayout.FlexibleSpace();
             }
-            GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close", GUILayout.Width(90)))
             {
                 CloseWin();
@@ -357,6 +389,7 @@ namespace VesselNotesNS
             GUILayout.FlexibleSpace();
 
             GUILayout.EndHorizontal();
+            GUI.enabled = true;
 
         }
         private void NoteEditWindow()
@@ -399,7 +432,22 @@ namespace VesselNotesNS
                 else
                 {
                     if (!noteList.list[i].privateNote)
-                        noteList.list[i].privateNote = GUILayout.Toggle(noteList.list[i].privateNote, "");
+                    {
+                        bool b = GUILayout.Toggle(noteList.list[i].privateNote, "");
+                        if (b)
+                        {
+                            SetSelectedNote(i);
+                            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().confirmLock)
+                            {
+                                confirmDialog = true;
+                                confirmNote = i;
+                                _confirmRect.x = (Screen.width - _confirmRect.width) / 2f;
+                                _confirmRect.y = (Screen.height - _confirmRect.height) / 2f;
+                            }
+                            else
+                                noteList.list[i].privateNote = true;
+                        }
+                    }
                     else
                         GUILayout.Toggle(noteList.list[i].privateNote, "");
                 }
@@ -423,15 +471,23 @@ namespace VesselNotesNS
             GUILayout.Label("Title: ");
             if (noteList.list.Count > 0 && selectedNote >= 0 && selectedNote < noteList.list.Count)
                 noteList.list[selectedNote].title = GUILayout.TextField(noteList.list[selectedNote].title, GUILayout.Width(NOTESELWIDTH));
+            else
+                GUILayout.Label(" ");
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
             // Text area with scroll bar
             noteVector = GUILayout.BeginScrollView(noteVector,
                 GUILayout.Width(NOTESCROLLVIEWWIDTH), GUILayout.Height(SCROLLVIEWENTRY));
-            if (noteList.list.Count > 0 && selectedNote >= 0 && selectedNote < noteList.list.Count)
-                noteList.list[selectedNote].note = GUILayout.TextArea(noteList.list[selectedNote].note, myStyle,
-                GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(SCROLLVIEWENTRY));
+            if (noteList.list.Count > 0)
+            {
+                if (selectedNote >= 0 && selectedNote < noteList.list.Count)
+                    noteList.list[selectedNote].note = GUILayout.TextArea(noteList.list[selectedNote].note, myStyle,
+                        GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(SCROLLVIEWENTRY));
+            }
+            else
+                GUILayout.Label(" ");
+
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
@@ -440,31 +496,45 @@ namespace VesselNotesNS
                 (currentNoteForComparision != noteList.list[selectedNote].note ||
                 currentTitleForComparision != noteList.list[selectedNote].title))
             {
-                if (!HighLogic.LoadedSceneIsEditor)
-                    Log.Info("Part: " + part.partInfo.name + ", currentNoteForComparision: " + currentNoteForComparision +
-                        ", noteList.list[selectedNote].note: " + noteList.list[selectedNote].note +
-                        ", currentTitleForComparision: " + currentTitleForComparision +
-                        ", noteList.list[selectedNote].title: " + noteList.list[selectedNote].title);
                 SyncAllNotes(true, false);
             }
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (noteList.list.Count > 0 && selectedNote >= 0 && selectedNote < noteList.list.Count)
+            if (noteList.list.Count > 0)
             {
-                if (GUILayout.Button("Delete Note", GUILayout.Width(90)))
+                if (GUILayout.Button("Copy all notes to clipboard", GUILayout.Width(200)))
                 {
-                    noteList.list.Remove(noteList.list[selectedNote]);
-                    if (selectedNote > noteList.list.Count)
-                        selectedNote = noteList.list.Count - 1;
-                    SetSelectedNote(selectedNote);
+                    CopyToClipboard(false, noteList.list);
                 }
+
+                GUILayout.FlexibleSpace();
             }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Copy Notes to clipboard", GUILayout.Width(200)))
+            if (noteList.list.Count > 0)
             {
-                CopyToClipboard(false, noteList.list);
+                if (selectedNote >= 0 && selectedNote < noteList.list.Count)
+                {
+                    if (GUILayout.Button("Delete Note", GUILayout.Width(90)))
+                    {
+                        noteList.list.Remove(noteList.list[selectedNote]);
+                        if (selectedNote > noteList.list.Count)
+                            selectedNote = noteList.list.Count - 1;
+                        SetSelectedNote(selectedNote);
+                    }
+                }
+                GUILayout.FlexibleSpace();
             }
-            GUILayout.FlexibleSpace();
+            if (noteList.list.Count > 0)
+            {
+                if (GUILayout.Button("Copy current note to clipboard", GUILayout.Width(200)))
+                {
+                    CopyToClipboard(false, noteList.list, selectedNote);
+                }
+                GUILayout.FlexibleSpace();
+            }
             if (GUILayout.Button("Close", GUILayout.Width(90)))
             {
                 CloseWin();
@@ -577,9 +647,18 @@ namespace VesselNotesNS
                         }
                     }
                 }
+                if (noteWinId == 0)
+                {
+                    noteWinId = WindowHelper.NextWindowId("Notes-" + winCnt.ToString());
+                    winCnt++;
+                    confirmWinId = WindowHelper.NextWindowId("Notes-Confirm" + winCnt.ToString());
+                }
+
                 if (_useKspSkin)
                     GUI.skin = HighLogic.Skin;
-                _windowRect = ClickThruBlocker.GUILayoutWindow(noteWinId, _windowRect, NotesWindow, "Vessel Notes & Logs : " + part.partInfo.title);
+                _windowRect = ClickThruBlocker.GUILayoutWindow(noteWinId, _windowRect, NotesWindow, "Vessel Notes & Logs");
+                if (confirmDialog)
+                    _confirmRect = ClickThruBlocker.GUILayoutWindow(confirmWinId, _confirmRect, ConfirmWindow, "Confirmation");
             }
         }
 

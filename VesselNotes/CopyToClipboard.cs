@@ -12,17 +12,26 @@ namespace VesselNotesNS
     {
         StringBuilder sbPrint = new StringBuilder();
 
-        void CopyToClipboard(bool log, List<NOTE> notes)
+        void CopyToClipboard(bool log, List<NOTE> notes, int i = -1 )
         {
             sbPrint.Clear();
-            foreach (var n in notes)
+            if (i >= 0 && i < notes.Count)
             {
-                sbPrint.AppendLine(n.note);
-                if (!log)
-                    sbPrint.AppendLine("\n-----------------------------------------------");
+                notes[i].note.CopyToClipboard();
             }
-            sbPrint.ToString().CopyToClipboard();
-            ScreenMessages.PostScreenMessage((log?"Log ":"Notes " ) + " copied to clipboard", 5, ScreenMessageStyle.UPPER_CENTER);
+            else
+            {
+                foreach (var n in notes)
+                {
+                    sbPrint.AppendLine(n.note);
+                    if (!log)
+                        sbPrint.AppendLine("\n-----------------------------------------------");
+                }
+                sbPrint.ToString().CopyToClipboard();
+            }
+            ScreenMessages.PostScreenMessage((log?"Log":
+                (i == -1?"Notes":"Note") 
+                ) + " copied to clipboard", 5, ScreenMessageStyle.UPPER_CENTER);
         }
 
     }
