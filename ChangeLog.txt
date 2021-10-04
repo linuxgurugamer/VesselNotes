@@ -20,9 +20,12 @@ ChangeLog
 	Added new part: DataLog Info Drive, this part does the logging now.  
 	Fixed saving of logs and notes to preserve new lines
 
-0.0.1.2 (unreleased)
+0.0.1.2 
 	Added ability to copy to clipboard a single note or all notes.  Logs are always printed in full
 	Added check to only display the "copy to clipboard" buttons if there are any to copy
 	Removed part name from window title
 	Fixed multiple windows not working in the editor
 	Added confirmation dialog
+	Thanks to @Stone_Blue for an updated part
+	Added AssemblyFileVersion
+	Updated version file for 1.12
