@@ -1,6 +1,6 @@
 {
   "NAME": "VesselNotes",
-  "URL": "https://ksp.spacetux.net/avc/VesselNotes.version",
+  "URL": "http://ksp.spacetux.net/avc/VesselNotes",
   "DOWNLOAD": "https://github.com/linuxgurugamer/VesselNotes/releases",
   "GITHUB": {
     "USERNAME": "linuxgurugamer",
@@ -10,7 +10,7 @@
     "MAJOR": 0,
     "MINOR": 0,
     "PATCH": 1,
-    "BUILD": 2
+    "BUILD": 3
   },
   "KSP_VERSION": {
     "MAJOR": 1,
