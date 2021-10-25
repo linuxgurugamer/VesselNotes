@@ -344,7 +344,7 @@ namespace VesselNotesNS
             {
                 GUILayout.Label("Autolog:");
                 noteList.autolog = GUILayout.Toggle(noteList.autolog, "");
-                GUILayout.Space(15);
+                GUILayout.Space(25);
             }
             else
             {
