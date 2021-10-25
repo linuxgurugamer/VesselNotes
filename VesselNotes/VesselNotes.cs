@@ -340,8 +340,17 @@ namespace VesselNotesNS
             }
 
             GUILayout.FlexibleSpace();
-            noteList.autolog = GUILayout.Toggle(noteList.autolog, "Autolog");
-            GUILayout.Label(" ");
+            if (_useKspSkin)
+            {
+                GUILayout.Label("Autolog:");
+                noteList.autolog = GUILayout.Toggle(noteList.autolog, "");
+                GUILayout.Space(15);
+            }
+            else
+            {
+                noteList.autolog = GUILayout.Toggle(noteList.autolog, "Autolog");
+                GUILayout.Label(" ");
+            }
             if (HighLogic.LoadedSceneIsFlight && GUILayout.Button("Vessel Notes", GUILayout.Width(90)))
             {
                 logMode = false;

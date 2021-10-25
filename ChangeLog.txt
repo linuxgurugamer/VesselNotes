@@ -29,3 +29,7 @@ ChangeLog
 	Thanks to @Stone_Blue for an updated part
 	Added AssemblyFileVersion
 	Updated version file for 1.12
+
+0.0.1.4
+	Fixed Autolog button not showing in the KSP UI
+	Fixed settings page where enabling the default would hide all the settings

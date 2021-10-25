@@ -59,7 +59,10 @@ namespace VesselNotesNS
 
         public override bool Enabled(MemberInfo member, GameParameters parameters)
         {
-            return autolog ;
+            if (member.Name == "autolog")
+                return true;
+            else
+                return !autolog ;
         }
 
         public override bool Interactible(MemberInfo member, GameParameters parameters)
