@@ -38,3 +38,24 @@ At the top are two buttons:
 
 The Vessel Log screen is similiar as you can see in further images below.  Functionality is the same, although more limited
 
+Pre/Post game notes
+		usage:
+			Enable in the stock settings page in any save game.  Note:  This is an install-wide setting, will affect all saves
+			When enabled the following is available
+				When exiting a save to the MainMenu:
+					A window will open up with the following controls:
+						Button to toggle the window skin
+						A main text input area
+						Three buttons at the bottom to either cancel, clear or save & close
+
+				When entering a save and there are notes previously saved:
+					A window with the following controls:
+						At the top:
+							Button to toggle the window skin
+							Button to toggle showing all notes or just the last
+							If all notes being shown, then a button to toggle whether to display them in ascending order or descending order (using the game date as the sort)
+							A button to copy the displayed notes to the clipboard, in the order displayed
+						In the center, a scroll list showing either a single note or all the notes.  Each note will have a toggle which will hide that note
+						At the bottom, a button to close the window
+		Once saved, notes cannot be edited directly.  The pre/post release notes are saved in a file: 
+			VesselNotes.cfg in the game save directory

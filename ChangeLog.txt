@@ -33,3 +33,9 @@ ChangeLog
 0.0.1.4
 	Fixed Autolog button not showing in the KSP UI
 	Fixed settings page where enabling the default would hide all the settings
+
+0.0.2
+	Added Pre/Post Game Notes
+
+0.0.2.1
+	Fixed not showing multiple lines on seperate lines on the pre-game-notes

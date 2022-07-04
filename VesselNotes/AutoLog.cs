@@ -155,13 +155,14 @@ namespace VesselNotesNS
         void onVesselDestroy(Vessel v)
         {
             return;
+#if false
             if (v != part.vessel) return;
             string s = v.vesselName + " was destroyed";
 
             CreateLogEntry(RespondEvents.OnVesselDestruction, false, s);
             SaveLogsToFile(v, this.part);
             ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
-
+#endif
         }
 
         void OnTriggeredDataTransmission(ScienceData sd, Vessel v, bool b)

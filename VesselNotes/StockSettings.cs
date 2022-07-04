@@ -48,10 +48,15 @@ namespace VesselNotesNS
             toolTip = "Minimum time not touching the ground to be considered flying")]
         public double minFlyingTime = 10;
 
-
         [GameParameters.CustomParameterUI("Always query when locking a note",
             toolTip = "Ask for confirmation when locking a not")]
         public bool confirmLock = true;
+
+
+        [GameParameters.CustomParameterUI("Show Pre/Post game notes",
+            toolTip = "Show game notes when starting up and allow entry of notes when exiting a save\nNote: This is a global setting affecting ALL saves in this install")]
+        public bool showGameNotes = true;
+
 
         public override void SetDifficultyPreset(GameParameters.Preset preset)
         {
@@ -59,14 +64,27 @@ namespace VesselNotesNS
 
         public override bool Enabled(MemberInfo member, GameParameters parameters)
         {
-            if (member.Name == "autolog")
+            if (member.Name == "autolog" || member.Name == "showGameNotes")
                 return true;
             else
                 return !autolog ;
         }
 
+        bool initted = false;
+        bool oldShowGameNotes;
         public override bool Interactible(MemberInfo member, GameParameters parameters)
         {
+            if (!initted)
+            {
+                initted = true;
+                oldShowGameNotes = showGameNotes;
+            }
+            if (oldShowGameNotes != showGameNotes)
+            {
+                oldShowGameNotes = showGameNotes;
+                EnterExitGame.active = showGameNotes;
+                EnterExitGame.SaveCfg();
+            }
             return true;
         }
 

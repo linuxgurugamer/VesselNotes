@@ -3,3 +3,7 @@ To Do
 
 
 In flight, putting one window on top of another causes both parts to be highlighted
+
+Save & Exit Notes
+	add method to integrate internal notes with exit notes
+	Add method to update the current exit notes on the fly
