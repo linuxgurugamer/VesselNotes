@@ -112,7 +112,7 @@ namespace VesselNotesNS
         {
             if (!HighLogic.LoadedSceneIsEditor)
             {
-                if (vessel == null || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
+                if (vessel == null || vessel.protoVessel == null || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
                     return;
             }
             if (Log == null)

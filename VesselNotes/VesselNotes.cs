@@ -121,21 +121,40 @@ namespace VesselNotesNS
             }
         }
 
-        void ResetEvents()
+        bool resetEvents = false;
+        void ResetEvents(bool init = true)
         {
+            if (init && !resetEvents)
+            {
+                resetEvents = true;
+                GameEvents.onVesselDocking.Add(onVesselDocking);
+                GameEvents.onDockingComplete.Add(onDockingComplete);
 
-            GameEvents.onVesselDocking.Add(onVesselDocking);
-            GameEvents.onDockingComplete.Add(onDockingComplete);
+                GameEvents.onSameVesselUndock.Add(onSameVesselUndock);
+                GameEvents.onUndock.Add(onUndock);
+                GameEvents.onPartUndockComplete.Add(onPartUndockComplete);
+                GameEvents.onPartUndock.Add(onPartUndock);
+                GameEvents.onVesselsUndocking.Add(onVesselsUndocking);
 
-            GameEvents.onSameVesselUndock.Add(onSameVesselUndock);
-            GameEvents.onUndock.Add(onUndock);
-            GameEvents.onPartUndockComplete.Add(onPartUndockComplete);
-            GameEvents.onPartUndock.Add(onPartUndock);
-            GameEvents.onVesselsUndocking.Add(onVesselsUndocking);
+                GameEvents.onPartDeCoupleNewVesselComplete.Add(onPartDeCoupleNewVesselComplete);
 
-            GameEvents.onPartDeCoupleNewVesselComplete.Add(onPartDeCoupleNewVesselComplete);
+                GameEvents.OnVesselRecoveryRequested.Add(onVesselRecoveryRequested);
+            } else if (resetEvents)
+            {
+                GameEvents.onVesselDocking.Remove(onVesselDocking);
+                GameEvents.onDockingComplete.Remove(onDockingComplete);
 
-            GameEvents.OnVesselRecoveryRequested.Add(onVesselRecoveryRequested);
+                GameEvents.onSameVesselUndock.Remove(onSameVesselUndock);
+                GameEvents.onUndock.Remove(onUndock);
+                GameEvents.onPartUndockComplete.Remove(onPartUndockComplete);
+                GameEvents.onPartUndock.Remove(onPartUndock);
+                GameEvents.onVesselsUndocking.Remove(onVesselsUndocking);
+
+                GameEvents.onPartDeCoupleNewVesselComplete.Remove(onPartDeCoupleNewVesselComplete);
+
+                GameEvents.OnVesselRecoveryRequested.Remove(onVesselRecoveryRequested);
+
+            }
         }
 
         void onVesselRecoveryRequested(Vessel v)

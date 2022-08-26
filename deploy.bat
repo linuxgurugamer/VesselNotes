@@ -1,5 +1,5 @@
 
-rem @echo off
+@echo off
 
 rem H is the destination game folder
 rem GAMEDIR is the name of the mod folder (usually the mod name)
@@ -10,7 +10,9 @@ rem    but not always
 set H=%KSPDIR%
 rem set H=R:\KSP_1.12.3_Career-JNSQ\
 
-set H=R:\KSP_1.12.3_Career-Dev-JNSQ
+rem set H=R:\KSP_1.12.3_Career-Dev-JNSQ
+
+set H=R:\testJNSQ
 
 set GAMEDIR=VesselNotes
 set GAMEDATA="GameData"
@@ -25,6 +27,6 @@ copy /Y %VERSIONFILE% %GAMEDATA%\%GAMEDIR%
 
 xcopy /y /s /I %GAMEDATA%\%GAMEDIR% "%H%\GameData\%GAMEDIR%"
 
-rem xcopy /y /s /I %GAMEDATA%\%GAMEDIR% "%DP0%\GameData\%GAMEDIR%"
+xcopy /y /s /I %GAMEDATA%\%GAMEDIR% "%DP0%\GameData\%GAMEDIR%"
 
-pause
+rem pause

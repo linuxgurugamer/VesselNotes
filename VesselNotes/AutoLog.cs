@@ -55,13 +55,14 @@ namespace VesselNotesNS
         }
 
 
-
+        bool eventsInitialized = false;
         public void InitializeLogEvents(bool init = true)
         {
             if (Log != null)
-                Log.Info("initializeEvents, init: " + init.ToString());
+                Log.Info("initializeEvents, init: " + init.ToString() + ", part.persistentId: " + part.persistentId);
             if (init)
             {
+                eventsInitialized = true;
                 GameEvents.onCrashSplashdown.Add(onCrashSplashdown);
                 GameEvents.onLaunch.Add(onLaunch);
                 GameEvents.onStageSeparation.Add(onStageSeperation);
@@ -91,32 +92,40 @@ namespace VesselNotesNS
             }
             else
             {
-                GameEvents.onCrashSplashdown.Remove(onCrashSplashdown);
-                GameEvents.onLaunch.Remove(onLaunch);
-                GameEvents.onStageSeparation.Remove(onStageSeperation);
-                GameEvents.onStageActivate.Remove(onStageActivate);
-                GameEvents.onPartDie.Remove(onPartDie);
-                GameEvents.onVesselOrbitClosed.Remove(onVesselOrbitClosed);
-                GameEvents.onVesselOrbitEscaped.Remove(onVesselOrbitEscaped);
+                if (eventsInitialized)
+                {
+                    eventsInitialized = false;  
+                    GameEvents.onCrashSplashdown.Remove(onCrashSplashdown);
+                    GameEvents.onLaunch.Remove(onLaunch);
+                    GameEvents.onStageSeparation.Remove(onStageSeperation);
+                    GameEvents.onStageActivate.Remove(onStageActivate);
+                    GameEvents.onPartDie.Remove(onPartDie);
+                    GameEvents.onVesselOrbitClosed.Remove(onVesselOrbitClosed);
+                    GameEvents.onVesselOrbitEscaped.Remove(onVesselOrbitEscaped);
 
-                //GameEvents.onCrewKilled.Remove(onCrewKilled);
-                GameEvents.onDominantBodyChange.Remove(onDominantBodyChange);
+                    //GameEvents.onCrewKilled.Remove(onCrewKilled);
+                    GameEvents.onDominantBodyChange.Remove(onDominantBodyChange);
 
-                GameEvents.onKerbalPassedOutFromGeeForce.Remove(onKerbalPassedOutFromGeeForce);
+                    GameEvents.onKerbalPassedOutFromGeeForce.Remove(onKerbalPassedOutFromGeeForce);
 
-                GameEvents.onVesselDocking.Remove(onVesselDockingLog);
-                GameEvents.onUndock.Remove(onVesselUndock);
+                    GameEvents.onVesselDocking.Remove(onVesselDockingLog);
+                    GameEvents.onUndock.Remove(onVesselUndock);
 
-                GameEvents.onCrewOnEva.Remove(onCrewOnEva);
+                    GameEvents.onCrewOnEva.Remove(onCrewOnEva);
 
-                GameEvents.OnTriggeredDataTransmission.Remove(OnTriggeredDataTransmission);
+                    GameEvents.OnTriggeredDataTransmission.Remove(OnTriggeredDataTransmission);
 
-                GameEvents.VesselSituation.onReachSpace.Remove(OnReachSpace);
-                GameEvents.onVesselSituationChange.Remove(onVesselSituationChanged);
-                GameEvents.VesselSituation.onReturnFromOrbit.Remove(OnReturnFromOrbit);
-                GameEvents.VesselSituation.onReturnFromSurface.Remove(OnReturnFromSurface);
-                GameEvents.onVesselDestroy.Remove(onVesselDestroy);
+                    GameEvents.VesselSituation.onReachSpace.Remove(OnReachSpace);
+                    GameEvents.onVesselSituationChange.Remove(onVesselSituationChanged);
+                    GameEvents.VesselSituation.onReturnFromOrbit.Remove(OnReturnFromOrbit);
+                    GameEvents.VesselSituation.onReturnFromSurface.Remove(OnReturnFromSurface);
+                    GameEvents.onVesselDestroy.Remove(onVesselDestroy);
 
+                    GameEvents.onVesselLoaded.Remove(onVesselLoaded);
+                    GameEvents.onVesselSwitchingToUnloaded.Remove(onVesselSwitchingToUnloaded);
+
+                }
+                ResetEvents(false);
             }
         }
 
@@ -435,6 +444,8 @@ namespace VesselNotesNS
             if (HighLogic.CurrentGame != null && HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog)
                 InitializeLogEvents(false);
         }
+
+
         bool landed = true;
         double landedTime = 0;
         bool flying = false;
