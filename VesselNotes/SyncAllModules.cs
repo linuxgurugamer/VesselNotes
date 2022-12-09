@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using UnityEngine;
+using static VesselNotesNS.RegisterToolbar;
 
 namespace VesselNotesNS
 {
@@ -71,22 +72,6 @@ namespace VesselNotesNS
                     }
                 }
             }
-#if false
-            if (force)
-            {
-                Log.Info("GetAllNotesModules, from: " + from + ", Vessel.id: " + vessel.id + ", vessel.name: " + vessel.name + ", allNotesModules.Count: " + allNotesModules.Count);
-                int cnt = 0;
-                foreach (var m in allNotesModules)
-                {
-                    cnt++;
-                    Log.Info("GetAllNotesModues, #" + cnt + ", vessel.id: " + vessel.id + ", module.vessel.id: " + m.vessel.id + ", notes.count: " + m.noteList.list.Count);
-                    foreach (var n in m.noteList.list)
-                    {
-                        Log.Info("GetAllNotesModules, #" + cnt + ", vessel.id: " + vessel.id + ", module.vessel.id: " + m.vessel.id + ", note.vesselIdWhenCreated: " + n.noteListGuid + ", note.guid: " + n.guid);
-                    }
-                }
-            }
-#endif
         }
 
         bool doNotes = false, doLogs = false;
@@ -97,7 +82,6 @@ namespace VesselNotesNS
             doNotes = notes;
             doLogs = log;
             StartCoroutine("DoIt");
-
         }
 
         static private System.Object thisLock = new System.Object();

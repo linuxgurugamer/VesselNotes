@@ -43,3 +43,25 @@ ChangeLog
 0.0.2.2
 	Fixed nullref in InfoDrive when initializing
 	Fixed memory leaks caused by not releasing GameEvents
+
+0.0.2.3
+	Added toolbar button, only available at space center
+	Added GameNotes for SpaceCenter
+	Allows entry of new gamenotes
+	Made font settings global instead of per-part
+	Make skin global 
+	Added font settings to Stock Settings window
+	Refactored a bit, broke classes out into individual files
+	Added a few more events to be autologged, default is false
+	Added second column in stock settings to control which events get logged
+
+0.0.2.4 
+	Fixed bug where vessel log was not being saved to save file
+	Updated current crew report in log to show unmanned if no crew
+	Changed name for vessel log files from a date/timestamp to a compressed guid (need to use guid for uniquness)
+	Added check for VesselNotesLogs module on the vessel at launch, if not there, prompts the user 
+	added code to sanitize the filename which is based on the vessel name
+	Fixed memory leak
+	Fixed date calculations to work with non-standard days and years (usually changed via Kopernics)
+	Added window to display all logs, and display selected log
+	Moved the Font Size buttons to upper left, and the S (for Skin) and X (for exit) to upper right

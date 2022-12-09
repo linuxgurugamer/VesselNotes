@@ -32,12 +32,15 @@ using System.Reflection;
 using KSP.IO;
 using UnityEngine;
 using KSP_Log;
+using static VesselNotesNS.RegisterToolbar;
 
 
 namespace VesselNotesNS
 {
     public class VesselLog
     {
+
+
         // Get vessel log information.
         public static string GetLogInfo(Vessel v)
         {
@@ -45,11 +48,17 @@ namespace VesselNotesNS
                 return "";
             string _vesselInfo = "";
 
+            using (var dbi = new DateBreakdownInfo(Planetarium.GetUniversalTime()))
+            {
+
+
+#if false
             double _seconds = Planetarium.GetUniversalTime();
             _seconds = Math.Abs(_seconds);
 
             const int _minuteL = 60;
             const int _hourL = 60 * _minuteL;
+#if false
             int _dayL = 24 * _hourL;
             int _yearL = 365 * _dayL;
             if (GameSettings.KERBIN_TIME)
@@ -57,6 +66,11 @@ namespace VesselNotesNS
                 _dayL = 6 * _hourL;
                 _yearL = 426 * _dayL;
             }
+#else
+            int _dayL = (int)FlightGlobals.GetHomeBody().solarDayLength;
+            int _yearL = (int)FlightGlobals.GetHomeBody().orbit.period;
+#endif
+
             int _years = (int)Math.Floor(_seconds / _yearL);
             int _ryears = _years + 1;
             int _tseconds = (int)Math.Floor(_seconds);
@@ -68,25 +82,25 @@ namespace VesselNotesNS
             _seconds -= _hours * _hourL;
             int _minutes = (int)Math.Floor(_seconds / _minuteL);
             _seconds -= _minutes * _minuteL;
-
-            const string _separator =
-                "------------------------------------------------------------------------------------------------";
-            TimeSpan diff = TimeSpan.FromSeconds(FlightGlobals.ActiveVessel.missionTime);
-            string _formatted = string.Format(
-                  CultureInfo.CurrentCulture,
-                  "{0}y, {1}d, {2}:{3}:{4}",
-                  diff.Days / 365,
-                  (diff.Days - (diff.Days / 365) * 365) - ((diff.Days - (diff.Days / 365) * 365) / 30) * 30,
-                  diff.Hours.ToString("00"),
-                  diff.Minutes.ToString("00"),
-                  diff.Seconds.ToString("00"));
-            string _situation = Vessel.GetSituationString(FlightGlobals.ActiveVessel);
-            if (v != null)
-            _vesselInfo =
-                string.Format("\n{0}\n{1} --- Year: {2} Day: {3} Time: {4}:{5:00}:{6:00}\n" + "MET: {7} --- Status: {8}\n",
-                    _separator, v.GetDisplayName(), _ryears, _rdays, _hours, _minutes, _seconds, _formatted, _situation);
-            return _vesselInfo;
+#endif
+                const string _separator =
+                    "------------------------------------------------------------------------------------------------";
+                TimeSpan diff = TimeSpan.FromSeconds(FlightGlobals.ActiveVessel.missionTime);
+                string _formatted = string.Format(
+                      CultureInfo.CurrentCulture,
+                      "{0}y, {1}d, {2}:{3}:{4}",
+                      diff.Days / 365,
+                      (diff.Days - (diff.Days / 365) * 365) - ((diff.Days - (diff.Days / 365) * 365) / 30) * 30,
+                      diff.Hours.ToString("00"),
+                      diff.Minutes.ToString("00"),
+                      diff.Seconds.ToString("00"));
+                string _situation = Vessel.GetSituationString(FlightGlobals.ActiveVessel);
+                if (v != null)
+                    _vesselInfo =
+                        string.Format("\n{0}\n{1} --- Year: {2} Day: {3} Time: {4}:{5:00}:{6:00}\n" + "MET: {7} --- Status: {8}\n",
+                            _separator, v.GetDisplayName(), dbi._ryears, dbi._rdays, dbi._hours, dbi._minutes, dbi._seconds, _formatted, _situation);
+                return _vesselInfo;
+            }
         }
-
     }
 }

@@ -1,55 +1,76 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using KSP.UI.Screens;
-using System.Threading.Tasks;
-using UnityEngine;
-
-using ToolbarControl_NS;
-using ClickThroughFix;
+using static VesselNotesNS.RegisterToolbar;
 
 namespace VesselNotesNS
 {
+
     // [KSPAddon(KSPAddon.Startup.SpaceCentre, false)]
     //internal class LogsToFile:MonoBehaviour
     internal partial class VesselNotesLogs
     {
+        //
+        // Following region is from https://gist.github.com/06b/27ae0b00d7321fa683c1
+        //
+#region encode
 
-#if false
-        static internal ToolbarControl toolbarControl = null;
-        internal const string MODID = "VesselNotes";
-        internal const string MODNAME = "Vessel Notes & Logs";
-
-        static Rect winRect = new Rect(0, 0, 200, 300);
-        bool isVisible = false;
-        static bool firstTime = true;
-        void Start()
+        /// <summary>
+        /// Creates a new instance of a Guid using the string value, 
+        /// then returns the base64 encoded version of the Guid.
+        /// </summary>
+        /// <param name="value">An actual Guid string (i.e. not a ShortGuid)</param>
+        /// <returns></returns>
+        public static string Encode(string value)
         {
-            if (firstTime)
-            {
-                winRect.x = (Screen.width - winRect.width) / 2;
-                winRect.y = (Screen.height - winRect.height) / 2;
-                firstTime = false;
-            }
+            Guid guid = new Guid(value);
+            return Encode(guid);
         }
-#endif
+
+        /// <summary>
+        /// Encodes the given Guid as a base64 string that is 22 
+        /// characters long.
+        /// </summary>
+        /// <param name="guid">The Guid to encode</param>
+        /// <returns></returns>
+        public static string Encode(Guid guid)
+        {
+            string encoded = Convert.ToBase64String(guid.ToByteArray());
+            encoded = encoded
+                .Replace("/", "_")
+                .Replace("+", "-");
+            return encoded.Substring(0, 22);
+        }
+#endregion
+
         string GetFilename(string dir, Vessel v, ref int cnt)
         {
-            string name = v.vesselName;
-            var dateAndTime = DateTime.Now;
-            name += "-" + (dateAndTime.Year - 2000).ToString() + "." + dateAndTime.Month.ToString("D2") + "." + dateAndTime.Day.ToString("D2");
-            name += "-" + (dateAndTime.Hour).ToString("D2") + "." + (dateAndTime.Minute).ToString("D2");
-            if (cnt > 0)
-                name += "-" + cnt.ToString();
+            string name = KSPUtil.SanitizeFilename(v.vesselName + "-" + Encode(v.id));
+
+            //var dateAndTime = DateTime.Now;
+            //name += "-" + (dateAndTime.Year - 2000).ToString() + "." + dateAndTime.Month.ToString("D2") + "." + dateAndTime.Day.ToString("D2");
+            //name += "-" + (dateAndTime.Hour).ToString("D2") + "." + (dateAndTime.Minute).ToString("D2");
+            //if (cnt > 0)
+            //    name += "-" + cnt.ToString();
+            Log.Info("GetFilename, name: " + dir + name);
             return dir + name;
         }
-        internal void SaveLogsToFile(Vessel v, Part p)
+
+        public static string SaveDir { get { return KSPUtil.ApplicationRootPath + "saves/" + HighLogic.SaveFolder + "/VesselLogs/";} }
+        internal void SaveLogsToFile(string from, Vessel v, Part p)
         {
+            ConfigNode node = new ConfigNode();
+            ConfigNode vesselNode = new ConfigNode();
+
+            Log.Info("SaveLogsToFile, from: " + from);
+            
+            node.AddValue("VesselName", v.vesselName);
+            node.AddValue("VesselId", v.id);
+            node.AddValue("GameTime", Planetarium.GetUniversalTime());
+
             StringBuilder sbPrint = new StringBuilder();
 
-            var SaveDir = KSPUtil.ApplicationRootPath + "saves/" + HighLogic.SaveFolder + "/VesselLogs/";
+            //var SaveDir = KSPUtil.ApplicationRootPath + "saves/" + HighLogic.SaveFolder + "/VesselLogs/";
             if (!Directory.Exists(SaveDir))
                 Directory.CreateDirectory(SaveDir);
 
@@ -63,62 +84,41 @@ namespace VesselNotesNS
                 sbPrint.AppendLine("Part: " + p.partInfo.title);
                 sbPrint.AppendLine("Vessel: " + vessel.vesselName);
 
-                foreach (var n in m.logList.list)
+                 
+                foreach (NOTE n in m.logList.list)
                 {
-                    var s = n.note.Split('\n');
+                    ConfigNode note = new ConfigNode("VESSELLOG");
+
+                    string str = "";
+                    if (n.note != null)
+                        str = n.note.Replace("\n", "<EOL>");
+                    note.AddValue("NOTE", str);
+
+                    note.AddValue("TITLE", n.title);
+                    note.AddValue("GAMEDATETIME", n.gameDateTime);
+                    note.AddValue("GUID", n.guid);
+                    note.AddValue("VESSEL_ID", n.noteListGuid);
+                    note.AddValue("PRIVATENOTE", n.privateNote);
+                    //vesselNode.AddNode(note);
+                
+                    node.AddNode(note);
+
+
+                    string[] s = n.note.Split('\n');
 
                     foreach (var s1 in s)
                         sbPrint.AppendLine(s1);
                 }
-                while (File.Exists(GetFilename(SaveDir, v, ref cnt) + ".txt"))
-                {
-                    Log.Info("File found: " + GetFilename(SaveDir, v, ref cnt) + ".txt");
-                    cnt++;
-                }
-                File.WriteAllText(GetFilename(SaveDir, v, ref cnt) + ".txt", sbPrint.ToString());
+                var s2 = GetFilename(SaveDir, v, ref cnt);
+                //while (File.Exists(s1 + ".txt"))
+                //{
+                //    Log.Info("File found: " + s2 + ".txt");
+                //    cnt++;
+                //}
+                File.WriteAllText(s2 + ".txt", sbPrint.ToString());
+                node.Save(s2 + ".cfg");
             }
             ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
         }
-#if false
-    void AddToolbarButton()
-        {
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                if (toolbarControl == null)
-                {
-                    toolbarControl = gameObject.AddComponent<ToolbarControl>();
-                    toolbarControl.AddToAllToolbars(Toggle, Toggle,
-                        ApplicationLauncher.AppScenes.SPACECENTER,
-                        MODID,
-                        "airparkButton",
-                        "AirPark/VesselNotes/PluginData/VesselNotes-38",
-                        "AirPark/VesselNotes/PluginData/VesselNotes-24",
-                        MODNAME
-                    );
-
-                }
-            }
-        }
-
-        void Toggle()
-        {
-            isVisible = !isVisible;
-        }
-
-        void OnGUI()
-        {
-            if (isVisible)
-            {
-                winRect = ClickThruBlocker.GUILayoutWindow(12342312, winRect, DisplayWin, "Vessel Notes & Logs");
-            }
-        }
-        // vesselname+ uniqueID
-
-        void DisplayWin(int id)
-        {
-            GUILayout.BeginHorizontal();
-
-        }
-#endif
     }
 }

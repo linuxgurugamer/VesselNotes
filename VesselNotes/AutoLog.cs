@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-using static VesselNotesNS.VesselNotesLogs;
+using static VesselNotesNS.RegisterToolbar;
 
 namespace VesselNotesNS
 {
@@ -71,7 +71,9 @@ namespace VesselNotesNS
                 GameEvents.onVesselOrbitClosed.Add(onVesselOrbitClosed);
                 GameEvents.onVesselOrbitEscaped.Add(onVesselOrbitEscaped);
 
-                //GameEvents.onCrewKilled.Add(onCrewKilled);
+                GameEvents.onCrewKilled.Add(onCrewKilled);
+                GameEvents.onCrewTransferred.Add(onCrewTransferred);
+
                 GameEvents.onDominantBodyChange.Add(onDominantBodyChange);
 
                 GameEvents.onKerbalPassedOutFromGeeForce.Add(onKerbalPassedOutFromGeeForce);
@@ -94,7 +96,7 @@ namespace VesselNotesNS
             {
                 if (eventsInitialized)
                 {
-                    eventsInitialized = false;  
+                    eventsInitialized = false;
                     GameEvents.onCrashSplashdown.Remove(onCrashSplashdown);
                     GameEvents.onLaunch.Remove(onLaunch);
                     GameEvents.onStageSeparation.Remove(onStageSeperation);
@@ -103,7 +105,10 @@ namespace VesselNotesNS
                     GameEvents.onVesselOrbitClosed.Remove(onVesselOrbitClosed);
                     GameEvents.onVesselOrbitEscaped.Remove(onVesselOrbitEscaped);
 
-                    //GameEvents.onCrewKilled.Remove(onCrewKilled);
+                    GameEvents.onCrewKilled.Remove(onCrewKilled);
+                    GameEvents.onCrewTransferred.Remove(onCrewTransferred);
+
+
                     GameEvents.onDominantBodyChange.Remove(onDominantBodyChange);
 
                     GameEvents.onKerbalPassedOutFromGeeForce.Remove(onKerbalPassedOutFromGeeForce);
@@ -131,58 +136,77 @@ namespace VesselNotesNS
 
         void OnReachSpace(Vessel v)
         {
-            Log.Info("OnReachSpace, logOnReachingSpace: ");
-            if (v != part.vessel) return;
-            string s = v.vesselName + " has reached space for the first time";
-
-            CreateLogEntry(RespondEvents.OnReachingSpace, false, s);
-        }
-        void onVesselSituationChanged(GameEvents.HostedFromToAction<Vessel, Vessel.Situations> fromTo)
-        {
-            if ((fromTo.from & (Vessel.Situations.SUB_ORBITAL | Vessel.Situations.ESCAPING | Vessel.Situations.ORBITING)) != 0)
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().OnReachSpace)
             {
-                if (fromTo.host != part.vessel) return;
-                string s = fromTo.host.vesselName + " reentered the atmosphere";
+                Log.Info("OnReachSpace, logOnReachingSpace: ");
+                if (v != part.vessel) return;
+                string s = v.vesselName + " has reached space for the first time";
 
-                CreateLogEntry(RespondEvents.OnReEntries, false, s);
+                CreateLogEntry(RespondEvents.OnReachingSpace, false, s);
             }
         }
+
+        void onVesselSituationChanged(GameEvents.HostedFromToAction<Vessel, Vessel.Situations> fromTo)
+        {
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselSituationChanged)
+            {
+                if ((fromTo.from & (Vessel.Situations.SUB_ORBITAL | Vessel.Situations.ESCAPING | Vessel.Situations.ORBITING)) != 0)
+                {
+                    if (fromTo.host != part.vessel) return;
+                    string s = fromTo.host.vesselName + " reentered the atmosphere";
+
+                    CreateLogEntry(RespondEvents.OnReEntries, false, s);
+                }
+            }
+        }
+
         void OnReturnFromOrbit(Vessel v, CelestialBody b)
         {
-            if (v != part.vessel) return;
-            string s = v.vesselName + " returned from orbit around " + b.displayName;
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().OnReturnFromOrbit)
+            {
+                if (v != part.vessel) return;
+                string s = v.vesselName + " returned from orbit around " + b.displayName;
 
-            CreateLogEntry(RespondEvents.OnReturnsFromOrbitSurface, false, s);
+                CreateLogEntry(RespondEvents.OnReturnsFromOrbitSurface, false, s);
+            }
         }
+
         void OnReturnFromSurface(Vessel v, CelestialBody b)
         {
-            if (v != part.vessel) return;
-            string s = v.vesselName + " returned from surface of " + b.displayName;
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().OnReturnFromSurface)
+            {
+                if (v != part.vessel) return;
+                string s = v.vesselName + " returned from surface of " + b.displayName;
 
-            CreateLogEntry(RespondEvents.OnReturnsFromOrbitSurface, false, s);
+                CreateLogEntry(RespondEvents.OnReturnsFromOrbitSurface, false, s);
+            }
         }
+
         void onVesselDestroy(Vessel v)
         {
-            return;
-#if false
-            if (v != part.vessel) return;
-            string s = v.vesselName + " was destroyed";
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselDestroy)
+            {
+                if (v != part.vessel) return;
+                string s = v.vesselName + " was destroyed";
 
-            CreateLogEntry(RespondEvents.OnVesselDestruction, false, s);
-            SaveLogsToFile(v, this.part);
-            ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
-#endif
+                CreateLogEntry(RespondEvents.OnVesselDestruction, false, s);
+                SaveLogsToFile("onVesselDestroy", v, this.part);
+                ScreenMessages.PostScreenMessage("Logs saved to file", 15, ScreenMessageStyle.UPPER_CENTER);
+            }
         }
 
         void OnTriggeredDataTransmission(ScienceData sd, Vessel v, bool b)
         {
-            if (v != part.vessel) return;
-            string s;
-            if (b)
-                s = "Science data " + sd.title + " transmitted by vessel: " + v.vesselName;
-            else
-                s = "Incomplete science data " + sd.title + " transmitted by vessel: " + v.vesselName;
-            CreateLogEntry(RespondEvents.OnTriggeredDataTransmission, false, s, "");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().OnTriggeredDataTransmission)
+            {
+                if (v != part.vessel) return;
+                string s;
+                if (b)
+                    s = "Science data " + sd.title + " transmitted by vessel: " + v.vesselName;
+                else
+                    s = "Incomplete science data " + sd.title + " transmitted by vessel: " + v.vesselName;
+                CreateLogEntry(RespondEvents.OnTriggeredDataTransmission, false, s, "");
+            }
         }
 
 
@@ -204,54 +228,67 @@ namespace VesselNotesNS
 
         void onVesselUndock(EventReport evt)
         {
-            if (evt.origin.vessel != part.vessel) return;
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselUndock)
+            {
+                if (evt.origin.vessel != part.vessel) return;
 
-            Log.Info("onUndock");
-            Log.Info("onUndock, evt.origin: " + evt.origin.name + ",   " + evt.origin.partInfo.name);
-            CreateLogEntry(RespondEvents.OnUndocking, false, "", "");
+                Log.Info("onUndock");
+                Log.Info("onUndock, evt.origin: " + evt.origin.name + ",   " + evt.origin.partInfo.name);
+                CreateLogEntry(RespondEvents.OnUndocking, false, "", "");
+            }
         }
+
         void onKerbalPassedOutFromGeeForce(ProtoCrewMember crewMember)
         {
-            Log.Info("onKerbalPassedOutFromGeeForce");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onKerbalPassedOutFromGeeForce)
+            {
+                Log.Info("onKerbalPassedOutFromGeeForce");
 
-            CreateLogEntry(RespondEvents.KerbalPassedOutFromGeeForce, false, crewMember.name, crewMember.name);
+                CreateLogEntry(RespondEvents.KerbalPassedOutFromGeeForce, false, crewMember.name, crewMember.name);
+            }
         }
+
 
         void onCrewOnEva(GameEvents.FromToAction<Part, Part> b)
         {
-            Log.Info("onCrewOnEva");
-            if (b.from != part.vessel) return;
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onCrewOnEva)
+            {
+                if (b.from != part.vessel) return;
 
-            Log.Info("from: " + b.from.partInfo.name + "    to: " + b.to.partInfo.name);
+                Log.Info("from: " + b.from.partInfo.name + "    to: " + b.to.partInfo.name);
 
-            CreateLogEntry(RespondEvents.CrewOnEVA, false, "Crew went on EVA from vessel: " + b.to.vessel.vesselName + ", from.vessel: " + b.from.vessel.vesselName);
-
+                CreateLogEntry(RespondEvents.CrewOnEVA, false, "Crew went on EVA from vessel: " + b.to.vessel.vesselName + ", from.vessel: " + b.from.vessel.vesselName);
+            }
         }
 
 
         void onCrashSplashdown(EventReport evt)
         {
-            if (evt.origin.vessel != part.vessel) return;
-            Log.Info("onCrashSplashdown");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onCrashSplashdown)
+            {
+                if (evt.origin.vessel != part.vessel) return;
+                Log.Info("onCrashSplashdown");
 
-            if (evt.origin.vessel.Splashed)
-            {
-                CreateLogEntry(RespondEvents.Splashdown, false, "Splashdown");
-            }
-            else
-            {
-                CreateLogEntry(RespondEvents.CrashOrSplashdown, false, "Crashed");
+                if (evt.origin.vessel.Splashed)
+                {
+                    CreateLogEntry(RespondEvents.Splashdown, false, "Splashdown");
+                }
+                else
+                {
+                    CreateLogEntry(RespondEvents.CrashOrSplashdown, false, "Crashed");
+                }
             }
         }
 
         internal void onVesselLanded(Vessel v, bool splashed = false)
         {
-            if (!vesselInFlight || v != part.vessel)
-                return;
-            Log.Info("onVesselLanded");
-
-
-            CreateLogEntry(RespondEvents.Landed, false, splashed? "Landed":"Splashdown");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselLanded)
+            {
+                if (!vesselInFlight || v != part.vessel)
+                    return;
+                Log.Info("onVesselLanded");
+                CreateLogEntry(RespondEvents.Landed, false, splashed ? "Landed" : "Splashdown");
+            }
         }
 
         public string getCurrentCrew(Vessel v = null)
@@ -270,59 +307,78 @@ namespace VesselNotesNS
 
         void onLaunch(EventReport evt)
         {
-            Log.Info("onLaunch 0, LoadedScene: " + HighLogic.LoadedScene.ToString());
-            if (!vesselInFlight || FlightGlobals.ActiveVessel != part.vessel)
-                return;
-            Log.Info("onLaunch");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onLaunch)
+            {
+                Log.Info("onLaunch 0, LoadedScene: " + HighLogic.LoadedScene.ToString());
+                if (!vesselInFlight || FlightGlobals.ActiveVessel != part.vessel)
+                    return;
 
-            CreateLogEntry(RespondEvents.Launch, false, "Vessel launched, current crew: " + getCurrentCrew());
+                var curCerw = getCurrentCrew();
+                if (curCerw == null || curCerw == "")
+                    CreateLogEntry(RespondEvents.Launch, false, "Vessel launched, unmanned");
+                else
+                    CreateLogEntry(RespondEvents.Launch, false, "Vessel launched, current crew: " + curCerw);
+            }
         }
 
         void onStageSeperation(EventReport evt)
         {
-            if (!vesselInFlight || evt.origin.vessel != part.vessel)
-                return;
-            Log.Info("onStageSeperation");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onStageSeperation)
+            {
+                if (!vesselInFlight || evt.origin.vessel != part.vessel)
+                    return;
+                Log.Info("onStageSeperation");
 
-            CreateLogEntry(RespondEvents.StageSeparation, false, " Stage Seperation");
+                CreateLogEntry(RespondEvents.StageSeparation, false, " Stage Seperation");
+            }
         }
+
         void onStageActivate(int stage)
         {
-            if (!vesselInFlight)
-                return;
-            Log.Info("onStageActivate");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onStageActivate)
+            {
+                if (!vesselInFlight)
+                    return;
+                Log.Info("onStageActivate");
 
-            CreateLogEntry(RespondEvents.StageActivate, false, "Activated stage #" + stage.ToString() +
-                ", Staging #: " + FlightGlobals.ActiveVessel.currentStage);
-
+                CreateLogEntry(RespondEvents.StageActivate, false, "Activated stage #" + stage.ToString() +
+                    ", Staging #: " + FlightGlobals.ActiveVessel.currentStage);
+            }
         }
 
         void onPartDie(Part p)
         {
-            if (p == null || !vesselInFlight || p.vessel != part.vessel)
-                return;
-            Log.Info("onPartDie");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onPartDie)
+            {
+                if (p == null || !vesselInFlight || p.vessel != part.vessel)
+                    return;
+                Log.Info("onPartDie");
 
-            if (p.vessel.vesselType == VesselType.Debris)
-                return;
-            string s;
-            if (p.vessel.rootPart != p)
-                s = p.vessel.name + ", " + p.partInfo.name + " was destroyed";
-            else
-                s = p.partInfo.name + " was destroyed";
-            if (p.vessel == FlightGlobals.ActiveVessel)
-                CreateLogEntry(RespondEvents.PartDied, false, s);
-            else
-                CreateLogEntry(RespondEvents.PartDied, false, s);
+                if (p.vessel.vesselType == VesselType.Debris)
+                    return;
+                string s;
+                if (p.vessel.rootPart != p)
+                    s = p.vessel.name + ", " + p.partInfo.name + " was destroyed";
+                else
+                    s = p.partInfo.name + " was destroyed";
+                if (p.vessel == FlightGlobals.ActiveVessel)
+                    CreateLogEntry(RespondEvents.PartDied, false, s);
+                else
+                    CreateLogEntry(RespondEvents.PartDied, false, s);
+            }
         }
+
         void onVesselDockingLog(uint i1, uint i2)
         {
-            if (!vesselInFlight || (i1 != this.vessel.persistentId && i2 != this.vessel.persistentId))
-                return;
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselDockingLog)
+            {
+                if (!vesselInFlight || (i1 != this.vessel.persistentId && i2 != this.vessel.persistentId))
+                    return;
 
-            Log.Info("onVesselDocking");
+                Log.Info("onVesselDocking");
 
-            CreateLogEntry(RespondEvents.PartCouple, false);
+                CreateLogEntry(RespondEvents.PartCouple, false);
+            }
         }
 
 #if false
@@ -344,57 +400,73 @@ namespace VesselNotesNS
 #endif
         void onVesselOrbitClosed(Vessel v)
         {
-            if (v == null || !vesselInFlight || v != part.vessel)
-                return;
-            Log.Info("onVesselOrbitClosed");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselOrbitClosed)
+            {
+                if (v == null || !vesselInFlight || v != part.vessel)
+                    return;
+                Log.Info("onVesselOrbitClosed");
 
-            CreateLogEntry(RespondEvents.OrbitClosed, false, v.name + " achieved orbit");
+                CreateLogEntry(RespondEvents.OrbitClosed, false, v.name + " achieved orbit");
+            }
         }
+
         void onVesselOrbitEscaped(Vessel v)
         {
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselOrbitEscape)
+            {
+                if (v == null || !vesselInFlight || v != part.vessel)
+                    return;
+                Log.Info("onVesselOrbitEscaped, vessel: " + v.name);
 
-            if (v == null || !vesselInFlight)
-                return;
-            Log.Info("onVesselOrbitEscaped, vessel: " + v.name);
-
-            CreateLogEntry(RespondEvents.OrbitEscaped, false, v.name + " achieved escape velocity");
+                CreateLogEntry(RespondEvents.OrbitEscaped, false, v.name + " achieved escape velocity");
+            }
         }
 
-#if false
         void onCrewKilled(EventReport report)
         {
-            Log.Info("onCrewKilled");
-            if (vessel.isActiveVessel)
-                CreateLogEntry(RespondEvents.CrewKilled, false, report.sender + " killed");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onCrewKilled)
+            {
+                if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onCrewKilled)
+                {
+                    Log.Info("onCrewKilled");
+                    if (vessel.isActiveVessel)
+                        CreateLogEntry(RespondEvents.CrewKilled, false, report.sender + " killed");
+                }
+            }
         }
-#endif
 
-#if false
+
         void onCrewTransferred(GameEvents.HostedFromToAction<ProtoCrewMember, Part> data)
         {
-            Log.Info("onCrewTransferred");
-
-            Log.Info("onCrewTransferred, from: " + data.from.name + ", " + data.from.partInfo.name + "   to: " + data.to.name + ", " + data.to.partInfo.name);
-            if (data.to.Modules.Contains<KerbalEVA>())
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onCrewTransferred)
             {
-                Log.Info("Kerbal going EVA");
-                kerbalGoingEVA = true;
-                return;
+                if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onCrewTransferred)
+                {
+                    Log.Info("onCrewTransferred, from: " + data.from.name + ", " + data.from.partInfo.name + "   to: " + data.to.name + ", " + data.to.partInfo.name);
+                    if (data.to.Modules.Contains<KerbalEVA>())
+                    {
+                        Log.Info("Kerbal going EVA");
+                        //kerbalGoingEVA = true;
+                        return;
+                    }
+                    //kerbalTransferred = 2;
+                }
             }
-            kerbalTransferred = 2;
-
         }
-#endif
+
 
         void onDominantBodyChange(GameEvents.FromToAction<CelestialBody, CelestialBody> data)
         {
-            Log.Info("onDominantBodyChange");
+            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onDominantBodyChange)
+            {
+                Log.Info("onDominantBodyChange");
 
-            // This happens when, for example, a kerbal goes EVA on a planet
-            if (data.from.bodyName == data.to.bodyName || part.vessel != FlightGlobals.ActiveVessel)
-                return;
+                // This happens when, for example, a kerbal goes EVA on a planet
+                if (data.from.bodyName == data.to.bodyName || part.vessel != FlightGlobals.ActiveVessel)
+                    return;
 
-            CreateLogEntry(RespondEvents.DominantBodyChange, false, "SOI change from: " + data.from.bodyName + " to " + data.to.bodyName);
+                CreateLogEntry(RespondEvents.DominantBodyChange, false, "SOI change from: " + data.from.bodyName + " to " + data.to.bodyName);
+            }
         }
 
 
@@ -406,8 +478,8 @@ namespace VesselNotesNS
                 return;
             }
 
-            string logentry = VesselNotesNS.VesselLog.GetLogInfo(this.vessel);
-            logentry += "\n"+ notes + "\n";
+            string logentry = VesselLog.GetLogInfo(this.vessel);
+            logentry += "\n" + notes + "\n";
 
 #if false
             string crew = getCurrentCrew(this.vessel);
@@ -416,8 +488,6 @@ namespace VesselNotesNS
             logList.list.Add(new NOTE("AutoLog #" + (logList.list.Count + 1).ToString(), logentry, logList.listGuid));
             SetSelectedLog(logList.list.Count + 1);
             selectedLog = logList.list.Count - 1;
-
-
         }
 
         //==================
@@ -440,6 +510,12 @@ namespace VesselNotesNS
 
         void OnDestroy()
         {
+            if (initVesselLoaded)
+            {
+                GameEvents.onVesselLoaded.Remove(onVesselLoaded);
+                GameEvents.onVesselSwitchingToUnloaded.Remove(onVesselSwitchingToUnloaded);
+            }
+
             CancelInvoke();
             if (HighLogic.CurrentGame != null && HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().autolog)
                 InitializeLogEvents(false);
@@ -453,7 +529,7 @@ namespace VesselNotesNS
 
         bool splashed = false;
         double splashedtime;
-        
+
         internal void WatchForLanding()
         {
             if (!VesselNotesLogs.vesselInFlight)
@@ -475,7 +551,7 @@ namespace VesselNotesNS
                 2.  speed less than 0.05
                 3.  Stable for 5 seconds
             */
-            if (( !landed && part.vessel.Landed) || (!splashed  && part.vessel.Splashed) &&
+            if ((!landed && part.vessel.Landed) || (!splashed && part.vessel.Splashed) &&
                 Planetarium.GetUniversalTime() - landedTime >= HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().landedStabilityTime && part.vessel.speed < 0.075f)
             {
                 onVesselLanded(part.vessel, part.vessel.Splashed);
@@ -496,7 +572,7 @@ namespace VesselNotesNS
                 {
                     flyingtime = Planetarium.GetUniversalTime();
                 }
-                if ( !flying && 
+                if (!flying &&
                    Planetarium.GetUniversalTime() - flyingtime >= HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().minFlyingTime)
                 {
                     landed = false;

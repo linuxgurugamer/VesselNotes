@@ -12,7 +12,7 @@ namespace VesselNotesNS
     {
         static StringBuilder sbPrint = new StringBuilder();
 
-        void CopyToClipboard(bool log, List<NOTE> notes, int i = -1)
+        static void CopyToClipboard(bool log, List<NOTE> notes, int i = -1)
         {
             sbPrint.Clear();
             if (i >= 0 && i < notes.Count)
@@ -61,20 +61,5 @@ namespace VesselNotesNS
             }
             ScreenMessages.PostScreenMessage("Post-game notes copied to clipboard", 5, ScreenMessageStyle.UPPER_CENTER);
         }
-
-
-
-
     }
-    internal static class StringStuff
-    {
-        public static void CopyToClipboard(this string s)
-        {
-            TextEditor te = new TextEditor();
-            te.text = s;
-            te.SelectAll();
-            te.Copy();
-        }
-    }
-
 }

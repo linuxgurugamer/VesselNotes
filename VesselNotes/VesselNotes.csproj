@@ -77,13 +77,19 @@
     </Compile>
     <Compile Include="AutoLog.cs" />
     <Compile Include="CopyToClipboard.cs" />
+    <Compile Include="DateBreakdownInfo.cs" />
     <Compile Include="EnterExitGame.cs" />
+    <Compile Include="GameNote.cs" />
+    <Compile Include="GlobalConfig.cs" />
     <Compile Include="InstallChecker.cs" />
+    <Compile Include="LaunchCheck.cs" />
     <Compile Include="NotesClasses.cs" />
     <Compile Include="RegisterToolbar.cs" />
     <Compile Include="SaveLoad.cs" />
     <Compile Include="SaveLogsToFile.cs" />
+    <Compile Include="ShowVesselLogs.cs" />
     <Compile Include="StockSettings.cs" />
+    <Compile Include="StringStuff.cs" />
     <Compile Include="SyncAllModules.cs" />
     <Compile Include="VesselLog.cs" />
     <Compile Include="VesselModule.cs" />
@@ -96,6 +102,9 @@
     </Reference>
     <Reference Include="$(KSPDIR)\KSP_x64_Data\Managed\UnityEngine*.dll">
       <Private>False</Private>
+    </Reference>
+    <Reference Include="ButtonManager">
+      <HintPath>R:\KSP_1.12.3_dev\GameData\SpaceTuxLibrary\Plugins\ButtonManager.dll</HintPath>
     </Reference>
     <Reference Include="ClickThroughBlocker, Version=0.1.7.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

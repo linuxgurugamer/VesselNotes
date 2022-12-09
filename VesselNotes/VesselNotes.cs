@@ -2,27 +2,18 @@
 using UnityEngine;
 using System.Collections.Generic;
 using ClickThroughFix;
-using KSP_Log;
 using SpaceTuxUtility;
 using System.Text;
+using static VesselNotesNS.RegisterToolbar;
 
 namespace VesselNotesNS
 {
     internal partial class VesselNotesLogs : PartModule
     {
-
-        // The font size.
-        [KSPField(isPersistant = true)]
-        private int _fontSize = 13;
-
         // The rectangle for main window.
         [KSPField(isPersistant = true)]
         private Rect _windowRect = new Rect(50f, 25f, WIDTH, HEIGHT);
         private Rect _confirmRect = new Rect(0, 0, 300, 100);
-
-        [KSPField(isPersistant = true)]
-        private bool _useKspSkin;
-
 
         private Vector2 noteVector = Vector2.zero;
         private Vector2 titleVector;
@@ -73,34 +64,20 @@ namespace VesselNotesNS
         const float LOGVIEWENTRY = SCROLLVIEWHEIGHT;
 
 
-        internal static Log Log = null;
-        static GUIStyle bstyle;
+        static GUIStyle bstyle = null;
 
         int noteWinId, confirmWinId;
         static int winCnt = 0;
         bool lastAutolog;
 
-        internal void InitLog()
-        {
-#if DEBUG
-            if (Log == null)
-                Log = new Log("VesselNotes", Log.LEVEL.INFO);
-#else
-      if (Log == null)
-                Log = new Log("VesselNotes", Log.LEVEL.ERROR);
-#endif
-
-        }
         void Start()
         {
             if (vessel == null || HighLogic.LoadedSceneIsEditor || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
                 return;
 
-
             //noteWinId = WindowHelper.NextWindowId("Notes-" + this.part.persistentId.ToString());
             noteWinId = WindowHelper.NextWindowId("Notes-" + winCnt.ToString());
             winCnt++;
-            InitLog();
             foreach (var n in noteList.list)
                 if (n.noteListGuid == Guid.Empty)
                     n.noteListGuid = noteList.listGuid;
@@ -162,7 +139,8 @@ namespace VesselNotesNS
             if (v == this.vessel && logList.list.Count > 0)
             {
                 //logList.list.RemoveAt(logList.list.Count - 1);
-                SaveLogsToFile(v, this.part);
+                // No need to save logs to file, they will be saved as part of the onVesselDestroy
+                //SaveLogsToFile("onVesselRecoveryRequested", v, this.part);
                 ScreenMessages.PostScreenMessage("Logs saved to file", 5, ScreenMessageStyle.UPPER_CENTER);
             }
         }
@@ -262,7 +240,7 @@ namespace VesselNotesNS
 
         }
 
-        GUIStyle myStyle = null;
+        //GUIStyle myStyle = null;
         GUIStyle buttonFontSel, buttonFont;
 
         bool logMode = false;
@@ -283,7 +261,10 @@ namespace VesselNotesNS
             else
                 NoteEditWindow();
 
-            ShowControls();
+            //ShowControls();
+            if (!EnterExitGame.ShowControls(true, _windowRect))
+                Toggle();
+
 
             GUI.DragWindow();
 
@@ -359,7 +340,7 @@ namespace VesselNotesNS
             }
 
             GUILayout.FlexibleSpace();
-            if (_useKspSkin)
+            if (GlobalConfig.KspSkin)
             {
                 GUILayout.Label("Autolog:");
                 noteList.autolog = GUILayout.Toggle(noteList.autolog, "");
@@ -384,7 +365,7 @@ namespace VesselNotesNS
                 GUILayout.Width(LOGSCROLLVIEWWIDTH), GUILayout.Height(LOGVIEWENTRY));
             if (logList.list.Count > 0)
             {
-                logList.list[selectedLog].note = GUILayout.TextArea(logList.list[selectedLog].note, myStyle,
+                logList.list[selectedLog].note = GUILayout.TextArea(logList.list[selectedLog].note, EnterExitGame.myStyle,
                 GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(LOGVIEWENTRY));
             }
             else
@@ -392,6 +373,7 @@ namespace VesselNotesNS
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
+
             if (logList.list.Count > 0 &&
                 (currentLogNoteForComparision != logList.list[selectedLog].note ||
                 currentLogTitleForComparision != logList.list[selectedLog].title))
@@ -510,7 +492,7 @@ namespace VesselNotesNS
             if (noteList.list.Count > 0)
             {
                 if (selectedNote >= 0 && selectedNote < noteList.list.Count)
-                    noteList.list[selectedNote].note = GUILayout.TextArea(noteList.list[selectedNote].note, myStyle,
+                    noteList.list[selectedNote].note = GUILayout.TextArea(noteList.list[selectedNote].note, EnterExitGame.myStyle,
                         GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(SCROLLVIEWENTRY));
             }
             else
@@ -579,51 +561,18 @@ namespace VesselNotesNS
             _visible = false;
 
         }
-        void ShowControls()
-        {
-            // Close the notes window.
-            if (GUI.Button(new Rect(2f, 2f, 22f, 16f), "X"))
-                Toggle();
-
-            // Toggle current skin.
-            if (GUI.Button(new Rect(30f, 2f, 22f, 16f), "S"))
-                _useKspSkin = !_useKspSkin;
-
-            // buttons for change the font size.
-            if (GUI.Button(new Rect(_windowRect.width + 10f - 115f, 2f, 15f, 15f), "-"))
-            {
-                // Who wants a 0 size font?
-                if (_fontSize <= 1) return;
-                _fontSize--;
-
-                myStyle.fontSize = _fontSize;
-                myStyle.richText = true;
-
-            }
-            GUI.Label(new Rect(_windowRect.width + 10f - 95f, 0f, 60f, 20f), "Font size");
-
-            if (GUI.Button(new Rect(_windowRect.width + 10f - 95f + 60f, 2f, 15f, 15f), "+"))
-            {
-                // Big big big!!!
-                _fontSize++;
-
-                myStyle.fontSize = _fontSize;
-                myStyle.richText = true;
-
-            }
-        }
 
         bool lastKspSkin;
         bool highlight = false;
         private void OnGUI()
         {
-            if (myStyle == null || lastKspSkin != _useKspSkin)
+            if (/* myStyle == null || */ buttonFont == null || bstyle == null || lastKspSkin != GlobalConfig.KspSkin)
             {
-                myStyle = new GUIStyle(GUI.skin.textArea);
-
-                myStyle.fontSize = _fontSize;
-                myStyle.richText = true;
-
+                //myStyle = new GUIStyle(GUI.skin.textArea);
+                //
+                //myStyle.fontSize = _fontSize;
+                //myStyle.richText = true;
+                EnterExitGame.InitStyle();
                 buttonFont = new GUIStyle(GUI.skin.label);
                 buttonFontSel = new GUIStyle(GUI.skin.label);
                 buttonFontSel.normal = new GUIStyleState { textColor = Color.green };
@@ -638,7 +587,7 @@ namespace VesselNotesNS
                 bstyle.fontStyle = GUI.skin.button.fontStyle;
                 bstyle.normal.textColor = Color.yellow;
                 GUI.backgroundColor = oldColor;
-                lastKspSkin = _useKspSkin;
+                lastKspSkin = GlobalConfig.KspSkin;
             }
             if (_visible)
             {
@@ -682,7 +631,7 @@ namespace VesselNotesNS
                     confirmWinId = WindowHelper.NextWindowId("Notes-Confirm" + winCnt.ToString());
                 }
 
-                if (_useKspSkin)
+                if (GlobalConfig.KspSkin)
                     GUI.skin = HighLogic.Skin;
                 _windowRect = ClickThruBlocker.GUILayoutWindow(noteWinId, _windowRect, NotesWindow, "Vessel Notes & Logs");
                 if (confirmDialog)

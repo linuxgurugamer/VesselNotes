@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static VesselNotesNS.RegisterToolbar;
 
 namespace VesselNotesNS
 {
@@ -12,9 +13,6 @@ namespace VesselNotesNS
         const string NODENAME = "VESSELNOTES";
         public override void OnLoad(ConfigNode node)
         {
-            if (Log == null)
-                InitLog();
-
             base.OnLoad(node);
             if (HighLogic.CurrentGame == null)
                 return;
@@ -59,7 +57,13 @@ namespace VesselNotesNS
                                                 Guid vesselId = Guid.Empty;
                                                 if (n.TryGetValue("VESSEL_ID", ref vesselId))
                                                 {
-                                                    noteList.list.Add(new NOTE(title, note, guid, vesselId, privateNote));
+                                                    while (note.Length > 0 && note[note.Length - 1] == '\n')
+                                                        note = note.Remove(note.Length - 1, 1);
+
+                                                    double gameDateTime = 0;
+                                                    n.TryGetValue("GAMEDATETIME", ref gameDateTime);
+
+                                                    noteList.list.Add(new NOTE(title, note, guid, vesselId, privateNote, gameDateTime:gameDateTime));
                                                 }
                                             }
                                         }
@@ -97,7 +101,9 @@ namespace VesselNotesNS
                                         Guid vesselId = Guid.Empty;
                                         if (n.TryGetValue("VESSEL_ID", ref vesselId))
                                         {
-                                            logList.list.Add(new NOTE(title, note, guid, vesselId, privateNote));
+                                            double gameDateTime = 0;
+                                            n.TryGetValue("GAMEDATETIME", ref gameDateTime);
+                                            logList.list.Add(new NOTE(title, note, guid, vesselId, privateNote, gameDateTime));
                                         }
                                     }
                                 }
@@ -115,8 +121,6 @@ namespace VesselNotesNS
                 if (vessel == null || vessel.protoVessel == null || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
                     return;
             }
-            if (Log == null)
-                InitLog();
 
             ConfigNode vesselNode = new ConfigNode(NODENAME);
             node.AddValue("LISTGUID", noteList.listGuid);
@@ -131,6 +135,7 @@ namespace VesselNotesNS
                 note.AddValue("NOTE", s);
 
                 note.AddValue("TITLE", n.title);
+                note.AddValue("GAMEDATETIME", n.gameDateTime);
                 note.AddValue("GUID", n.guid);
                 note.AddValue("VESSEL_ID", n.noteListGuid);
                 note.AddValue("PRIVATENOTE", n.privateNote);
@@ -140,15 +145,17 @@ namespace VesselNotesNS
             if (!HighLogic.LoadedSceneIsEditor)
             {
 
-                foreach (var n in logList.list)
+                foreach (NOTE n in logList.list)
                 {
                     ConfigNode note = new ConfigNode("VESSELLOG");
 
                     string s = "";
                     if (n.note != null)
                         s = n.note.Replace("\n", "<EOL>");
+                    note.AddValue("NOTE", s);
 
                     note.AddValue("TITLE", n.title);
+                    note.AddValue("GAMEDATETIME", n.gameDateTime);
                     note.AddValue("GUID", n.guid);
                     note.AddValue("VESSEL_ID", n.noteListGuid);
                     note.AddValue("PRIVATENOTE", n.privateNote);

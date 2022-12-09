@@ -12,7 +12,8 @@ rem set H=R:\KSP_1.12.3_Career-JNSQ\
 
 rem set H=R:\KSP_1.12.3_Career-Dev-JNSQ
 
-set H=R:\testJNSQ
+rem set H=R:\KSP_1.12.4_MissionCtlrParallax
+
 
 set GAMEDIR=VesselNotes
 set GAMEDATA="GameData"

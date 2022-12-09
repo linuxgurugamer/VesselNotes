@@ -2,12 +2,11 @@
 using System.Collections;
 using UnityEngine;
 using KSP.UI.Screens;
-using static VesselNotesNS.VesselNotesLogs;
+using static VesselNotesNS.RegisterToolbar;
 
 
 namespace VesselNotesNS
 {
-    //class MyVesselModule : VesselModule
     internal partial class VesselNotesLogs
     {
         int partCount = -1;
@@ -24,8 +23,10 @@ namespace VesselNotesNS
             }
         }
 
+        bool initVesselLoaded = false;
         void InitVesselLoaded()
         {
+            initVesselLoaded = true;
             GameEvents.onVesselLoaded.Add(onVesselLoaded);
             GameEvents.onVesselSwitchingToUnloaded.Add(onVesselSwitchingToUnloaded);
 
@@ -46,6 +47,8 @@ namespace VesselNotesNS
 
             StopCoroutine(SlowUpdate(1f));
         }
+
+
         private IEnumerator SlowUpdate(float delay)
         {
             while (true)

@@ -1,41 +1,27 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using KSP.UI.Screens;
-using KSP.UI.Screens.SpaceCenter;
-using System.Threading.Tasks;
 using UnityEngine;
-using System.Reflection;
 using ClickThroughFix;
 using SpaceTuxUtility;
 
-using static VesselNotesNS.VesselNotesLogs;
+using ToolbarControl_NS;
+
+using static VesselNotesNS.RegisterToolbar;
 
 namespace VesselNotesNS
 {
-    internal class GameNote
-    {
-        internal string prePostGameNotes;
-        internal double gameTime;
-        internal bool visible;
-        internal GameNote(double savedGameTime, string notes)
-        {
-            visible = true;
-            prePostGameNotes = notes;
-            gameTime = savedGameTime;
-        }
-    }
 
-    [KSPAddon(KSPAddon.Startup.MainMenu, true)]
+    [KSPAddon(KSPAddon.Startup.EveryScene, true)]
     public class EnterExitGame : MonoBehaviour
     {
+        public static EnterExitGame Instance;
+
         GameScenes lastScene = GameScenes.LOADING;
         double lastGameTime = 0;
-        string currentGame = "";
-        string saveFolder = "";
-        bool guiActive = false;
+        public bool guiActive = false;
+
+        public bool manualToggle = false;
         int enterExitWinId;
 
         const float HEIGHT = 400;
@@ -43,105 +29,11 @@ namespace VesselNotesNS
 
         private Rect _windowRect = new Rect(50f, 25f, WIDTH, HEIGHT);
 
-        const string PLUGINDATADIR = "GameData/VesselNotes/PluginData/";
-        const string PLUGINDATA = PLUGINDATADIR + "VesselNotes.cfg";
-        const string NODENAME = "VesselNotes";
-
-        static ConfigNode configFile, configFileNode;
-
-        internal static bool active = true;
-        static bool KspSkin = true;
-        static bool showAscending = true;
-        static bool showAll = true;
-        static bool showInstructions = true;
-
-
-        static List<GameNote> notesList = new List<GameNote>();
-
         string prePostGameNotes = "";
-        string DataFileCfgName { get { return KSPUtil.ApplicationRootPath + "saves/" + saveFolder + "/" + "VesselNotes" + ".cfg"; } }
 
         void SetUpWinRect()
         {
             _windowRect = new Rect((Screen.width - WIDTH) / 2, (Screen.height - HEIGHT) / 2, WIDTH, HEIGHT);
-        }
-
-        public void LoadCfg()
-        {
-            configFile = ConfigNode.Load(KSPUtil.ApplicationRootPath + PLUGINDATA);
-            if (configFile != null)
-            {
-                configFileNode = configFile.GetNode(NODENAME);
-                if (configFileNode != null)
-                {
-                    active = configFileNode.SafeLoad("active", true);
-                    KspSkin = configFileNode.SafeLoad("KspSkin", true);
-
-                    showAscending = configFileNode.SafeLoad("showAscending", true);
-                    showAll = configFileNode.SafeLoad("showAll", true);
-                    showInstructions = configFileNode.SafeLoad("showInstructions", true);
-                }
-            }
-        }
-
-        public static void SaveCfg()
-        {
-            configFile = new ConfigNode(NODENAME);
-            configFileNode = new ConfigNode(NODENAME);
-
-            configFileNode.AddValue("active", active);
-            configFileNode.AddValue("KspSkin", KspSkin);
-
-            configFileNode.AddValue("showAscending", showAscending);
-            configFileNode.AddValue("showAll", showAll);
-            configFileNode.AddValue("showInstructions", showInstructions);
-            configFile.AddNode(NODENAME, configFileNode);
-            configFile.Save(KSPUtil.ApplicationRootPath + PLUGINDATA);
-        }
-
-        const string GAMETIME = "GameTime";
-        public void LoadData()
-        {
-            notesList.Clear();
-            if (File.Exists(DataFileCfgName))
-            {
-                configFile = ConfigNode.Load(DataFileCfgName);
-                if (configFile != null)
-                {
-                    configFileNode = configFile.GetNode(NODENAME);
-                    if (configFileNode != null)
-                    {
-                        var nodes = configFileNode.GetNodes("Note");
-                        foreach (var node in nodes)
-                        {
-                            var values = node.GetValuesList("Line");
-                            string notes = "";
-                            foreach (var v in values)
-                                notes += v + "\n";
-                            notesList.Add(new GameNote(node.SafeLoad(GAMETIME, (double)0), notes));
-                        }
-                    }
-                }
-            }
-        }
-
-        public void SaveData()
-        {
-            configFile = new ConfigNode();
-            configFileNode = new ConfigNode(NODENAME);
-            foreach (var note in notesList)
-            {
-                ConfigNode node = new ConfigNode("Note");
-                string[] lines = note.prePostGameNotes.Split('\n');
-                node.AddValue(GAMETIME, note.gameTime);
-                foreach (var l in lines)
-                {
-                    node.AddValue("Line", l);
-                }
-                configFileNode.AddNode(node);
-            }
-            configFile.AddNode(NODENAME, configFileNode);
-            configFile.Save(DataFileCfgName);
         }
 
 
@@ -154,21 +46,25 @@ namespace VesselNotesNS
             lastScene = HighLogic.LoadedScene;
 
             enterExitWinId = WindowHelper.NextWindowId("EnterExitGame");
-            LoadCfg();
+            GlobalConfig.LoadCfg();
+            Start2();
         }
 
+        static bool gameStarted = false;
         void onGameStateLoad(ConfigNode node)
         {
-            Log.Info("onGameStateLoad");
+            //Log.Info("onGameStateLoad, lastScene: " + lastScene);
             if (HighLogic.CurrentGame != null)
             {
                 if (lastScene == GameScenes.MAINMENU)
                 {
-                    currentGame = HighLogic.CurrentGame.Title;
-                    saveFolder = HighLogic.SaveFolder;
+                    //currentGame = HighLogic.CurrentGame.Title;
+                    GameNote.SaveFolder = HighLogic.SaveFolder;
                     guiActive = true;
+                    manualToggle = false;
+                    gameStarted = true;
                     SetUpWinRect();
-                    LoadData();
+                    GameNote.LoadData();
                 }
                 lastScene = HighLogic.LoadedScene;
             }
@@ -176,10 +72,11 @@ namespace VesselNotesNS
 
         internal void onGameSceneLoadRequested(GameScenes loadedScene)
         {
-            Log.Info("onGameSceneLoadRequested, loadedScene: " + loadedScene + ", lastScene: " + lastScene);
-            if (lastScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION && loadedScene == GameScenes.MAINMENU)
+            //Log.Info("onGameSceneLoadRequested, loadedScene: " + loadedScene + ", lastScene: " + lastScene);
+            if (lastScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION && loadedScene == GameScenes.MAINMENU && !notesSaved)
             {
                 guiActive = true;
+                manualToggle = false;
                 SetUpWinRect();
             }
             if (HighLogic.CurrentGame != null)
@@ -193,27 +90,27 @@ namespace VesselNotesNS
         GUIStyle window;
         Texture2D tex;
 
+        public static GUIStyle myStyle = null;
+        internal static void InitStyle()
+        {
+            if (myStyle == null)
+            {
+                myStyle = new GUIStyle(GUI.skin.textArea);
+                myStyle.fontSize = GlobalConfig.FontSize;
+                myStyle.richText = true;
+            }
+        }
+
+        bool notesSaved = false;
         internal void OnGUI()
         {
-            if (guiActive && active)
+            if (guiActive && GlobalConfig.active) //  && !notesSaved)
             {
                 if (kspWindow == null)
                 {
                     kspWindow = new GUIStyle(HighLogic.Skin.window);
                     unityStockWindow = new GUIStyle(GUI.skin.window);
 
-#if false
-                    tex = unityStockWindow.normal.background;
-                    var pixels = tex.GetPixels32();
-
-                    for (int i = 0; i < pixels.Length; ++i)
-                        pixels[i].a = 255;
-
-                    tex.SetPixels32(pixels); tex.Apply();
-                    unityStockWindow.active.background =
-                        unityStockWindow.focused.background =
-                        unityStockWindow.normal.background = tex;
-#endif
                     tex = kspWindow.normal.background;
                     var pixels = tex.GetPixels32();
 
@@ -226,8 +123,10 @@ namespace VesselNotesNS
                         kspWindow.focused.background =
                         kspWindow.normal.background = tex;
 
+                    InitStyle();
+
                 }
-                if (KspSkin)
+                if (GlobalConfig.KspSkin)
                 {
                     GUI.skin = HighLogic.Skin;
                     window = kspWindow;
@@ -236,59 +135,118 @@ namespace VesselNotesNS
                 {
                     window = unityStockWindow;
                 }
-                if (notesList.Count > 0 || HighLogic.LoadedScene == GameScenes.MAINMENU)
+                if (GameNote.notesList.Count > 0 || HighLogic.LoadedScene == GameScenes.MAINMENU || manualToggle)
+                {
                     _windowRect = ClickThruBlocker.GUILayoutWindow(enterExitWinId, _windowRect, StartStopWin,
                         HighLogic.LoadedScene == GameScenes.MAINMENU ? "Post Game Notes" : "Game Notes", window);
+                }
+            }
+            else
+            {
+                if (HighLogic.LoadedScene == GameScenes.MAINMENU)
+                    notesSaved = false;
             }
         }
 
+
+        public static bool ShowControls(bool guiActive, Rect _windowRect)
+        {
+            //if (GUI.Button(new Rect(_windowRect.width - 24, 3f, 23, 15f), new GUIContent("X")))
+
+            // Close the notes window.
+            //if (GUI.Button(new Rect(2f, 2f, 22f, 16f), "X"))
+                if (GUI.Button(new Rect(_windowRect.width - 24, 3f, 23, 15f), new GUIContent("X")))
+                    guiActive = false;
+
+            // Toggle current skin.
+            //if (GUI.Button(new Rect(30f, 2f, 22f, 16f), "S"))
+              if (GUI.Button(new Rect(_windowRect.width - 24-28, 3f, 23, 15f), new GUIContent("S")))
+                    GlobalConfig.KspSkin = !GlobalConfig.KspSkin;
+
+            // buttons for change the font size.
+            //if (GUI.Button(new Rect(_windowRect.width + 10f - 115f, 2f, 15f, 15f), "-"))
+            if (GUI.Button(new Rect(2, 2f, 15f, 15f), "-"))
+                {
+                    // Who wants a 0 size font?
+                    if (GlobalConfig.FontSize > GlobalConfig.MIN_FONT_SIZE)
+                    GlobalConfig.FontSize--;
+
+                myStyle.fontSize = GlobalConfig.FontSize;
+                myStyle.richText = true;
+
+            }
+            //GUI.Label(new Rect(_windowRect.width + 10f - 95f, 0f, 60f, 20f), "Font size");
+            GUI.Label(new Rect(22f, 0f, 60f, 20f), "Font size");
+
+            //if (GUI.Button(new Rect(_windowRect.width + 10f - 95f + 60f, 2f, 15f, 15f), "+"))
+            if (GUI.Button(new Rect(22f+ 60f, 2f, 15f, 15f), "+"))
+                {
+                    // Big big big!!!
+                    if (GlobalConfig.FontSize < GlobalConfig.MAX_FONT_SIZE)
+                    GlobalConfig.FontSize++;
+
+                myStyle.fontSize = GlobalConfig.FontSize;
+                myStyle.richText = true;
+
+            }
+            return guiActive;
+        }
+
         Vector2 contractPos;
+        bool enterNotes = false;
         internal void StartStopWin(int id)
         {
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(KspSkin ? "KSP Skin" : "Alt Skin", GUILayout.Width(90)))
-            { KspSkin = !KspSkin; SaveCfg(); }
+            if (GUILayout.Button(GlobalConfig.KspSkin ? "KSP Skin" : "Alt Skin", GUILayout.Width(90)))
+            {
+                GlobalConfig.KspSkin = !GlobalConfig.KspSkin;
+                GlobalConfig.SaveCfg();
+            }
             if (HighLogic.LoadedScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION)
             {
-                if (GUILayout.Button(showAll ? "Show All" : "Show Last", GUILayout.Width(90)))
-                { showAll = !showAll; SaveCfg(); }
-                if (showAll)
+                if (GUILayout.Button(GlobalConfig.showAll ? "Show All" : "Show Last", GUILayout.Width(90)))
+                { GlobalConfig.showAll = !GlobalConfig.showAll; GlobalConfig.SaveCfg(); }
+                if (GlobalConfig.showAll)
                 {
-                    if (GUILayout.Button(showAscending ? "Ascending" : "Descending", GUILayout.Width(90)))
-                    { showAscending = !showAscending; SaveCfg(); }
+                    if (GUILayout.Button(GlobalConfig.showAscending ? "Ascending" : "Descending", GUILayout.Width(90)))
+                    { GlobalConfig.showAscending = !GlobalConfig.showAscending; GlobalConfig.SaveCfg(); }
                 }
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Copy to clipboard", GUILayout.Width(150)))
+                if (GUILayout.Button("Show Vessel Logs", GUILayout.Width(150)))
                 {
-                    VesselNotesLogs.CopyToClipboard(notesList, showAscending, showAll);
+                    ShowVesselLogs.InstantiateShowVesselLogsWindow();
+                    //VesselNotesLogs.CopyToClipboard(GameNote.notesList, GlobalConfig.showAscending, GlobalConfig.showAll);
                 }
             }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (HighLogic.LoadedScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION)
+            if ((HighLogic.LoadedScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION) && !enterNotes)
             {
                 contractPos = GUILayout.BeginScrollView(contractPos, GUILayout.Height(HEIGHT - 60));
-                if (showAll)
+                if (GameNote.notesList.Count > 0)
                 {
-                    for (int i = 0; i < notesList.Count; i++)
+                    if (GlobalConfig.showAll)
                     {
-                        GameNote l = notesList[showAscending ? i : notesList.Count - i - 1];
+                        for (int i = 0; i < GameNote.notesList.Count; i++)
+                        {
+                            GameNote l = GameNote.notesList[GlobalConfig.showAscending ? i : GameNote.notesList.Count - i - 1];
 
-                        var GameTimeText = KSPUtil.PrintDate(l.gameTime, includeTime: true);
-                        GUILayout.BeginHorizontal();
+                            var GameTimeText = KSPUtil.PrintDate(l.gameTime, includeTime: true);
+                            GUILayout.BeginHorizontal();
 
-                        l.visible = GUILayout.Toggle(l.visible, GameTimeText);
-                        //GUILayout.Box(GameTimeText);
-                        GUILayout.EndHorizontal();
-                        //GUILayout.Label(GameTimeText);
-                        if (l.visible)
-                            GUILayout.TextArea(l.prePostGameNotes);
-                        GUILayout.Space(10);
+                            l.visible = GUILayout.Toggle(l.visible, GameTimeText);
+                            //GUILayout.Box(GameTimeText);
+                            GUILayout.EndHorizontal();
+                            //GUILayout.Label(GameTimeText);
+                            if (l.visible)
+                                GUILayout.TextArea(l.prePostGameNotes, myStyle);
+                            GUILayout.Space(10);
+                        }
                     }
-                }
-                else
-                {
-                    GUILayout.TextArea(notesList[notesList.Count - 1].prePostGameNotes);
+                    else
+                    {
+                        GUILayout.TextArea(GameNote.notesList[GameNote.notesList.Count - 1].prePostGameNotes, myStyle);
+                    }
                 }
                 GUILayout.EndScrollView();
                 GUILayout.EndHorizontal();
@@ -296,12 +254,28 @@ namespace VesselNotesNS
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Close", GUILayout.Width(60)))
+                {
                     guiActive = false;
+                    manualToggle = false;
+                    gameStarted = false;
+                }
+                if (!gameStarted)
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Enter Notes", GUILayout.Width(120)))
+                        enterNotes = true;
+                }
                 GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Copy to clipboard", GUILayout.Width(150)))
+                {
+                    VesselNotesLogs.CopyToClipboard(GameNote.notesList, GlobalConfig.showAscending, GlobalConfig.showAll);
+                }
+                GUILayout.FlexibleSpace();
+
             }
             else
             {
-                prePostGameNotes = GUILayout.TextArea(prePostGameNotes, GUILayout.Height(HEIGHT - 60));
+                prePostGameNotes = GUILayout.TextArea(prePostGameNotes, myStyle, GUILayout.Height(HEIGHT - 60));
                 GUILayout.EndHorizontal();
                 GUILayout.FlexibleSpace();
                 GUILayout.BeginHorizontal();
@@ -309,6 +283,7 @@ namespace VesselNotesNS
                 if (GUILayout.Button("Cancel", GUILayout.Width(60)))
                 {
                     guiActive = false;
+                    enterNotes = false;
                 }
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Clear", GUILayout.Width(60)))
@@ -318,16 +293,78 @@ namespace VesselNotesNS
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Save & Close"))
                 {
-                    notesList.Add(new GameNote(lastGameTime, prePostGameNotes));
-                    SaveData();
-                    prePostGameNotes = "";
-                    guiActive = false;
+                    SaveNotes();
+                    notesSaved = false;
+                }
+                if (HighLogic.LoadedScene != GameScenes.MAINMENU)
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Save & Exit game", GUILayout.Width(150)))
+                    {
+                        SaveNotes();
+                        notesSaved = true;
+                        GamePersistence.SaveGame("persistent", HighLogic.SaveFolder, SaveMode.OVERWRITE);
+                        HighLogic.LoadScene(GameScenes.MAINMENU);
+                    }
                 }
                 GUILayout.FlexibleSpace();
             }
             GUILayout.EndHorizontal();
+            guiActive = EnterExitGame.ShowControls(guiActive, _windowRect);
+
             GUI.DragWindow();
         }
-    }
 
+        void SaveNotes()
+        {
+            GameNote.notesList.Add(new GameNote(lastGameTime, prePostGameNotes));
+            GameNote.SaveData();
+            prePostGameNotes = "";
+            guiActive = false;
+            enterNotes = false;
+        }
+        static internal ToolbarControl toolbarControl = null;
+        internal const string MODID = "VesselNotes";
+        internal const string MODNAME = "Vessel Notes & Logs";
+
+        static Rect winRect = new Rect(0, 0, 200, 300);
+        //bool isVisible = false;
+        static bool firstTime = true;
+
+        void Start2()
+        {
+            if (firstTime)
+            {
+                winRect.x = (Screen.width - winRect.width) / 2;
+                winRect.y = (Screen.height - winRect.height) / 2;
+                firstTime = false;
+                AddToolbarButton();
+            }
+        }
+
+        void AddToolbarButton()
+        {
+            if (toolbarControl == null)
+            {
+                toolbarControl = gameObject.AddComponent<ToolbarControl>();
+                toolbarControl.AddToAllToolbars(WinToggle, WinToggle,
+                    ApplicationLauncher.AppScenes.SPACECENTER,
+                    MODID,
+                    "VesselNotesBtn",
+                    "VesselNotes/PluginData/VesselNotes-38",
+                    "VesselNotes/PluginData/VesselNotes-24",
+                    MODNAME
+                );
+
+            }
+        }
+
+        void WinToggle()
+        {
+            guiActive = !guiActive;
+            manualToggle = !manualToggle;
+            manualToggle = guiActive;
+            Log.Info("WinToggle, guiActive: " + guiActive + ", manualToggle: " + manualToggle);
+        }
+    }
 }
