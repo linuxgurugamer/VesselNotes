@@ -84,6 +84,7 @@
     <Compile Include="InstallChecker.cs" />
     <Compile Include="LaunchCheck.cs" />
     <Compile Include="NotesClasses.cs" />
+    <Compile Include="Persistance.cs" />
     <Compile Include="RegisterToolbar.cs" />
     <Compile Include="SaveLoad.cs" />
     <Compile Include="SaveLogsToFile.cs" />

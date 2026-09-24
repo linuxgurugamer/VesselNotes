@@ -65,3 +65,11 @@ ChangeLog
 	Fixed date calculations to work with non-standard days and years (usually changed via Kopernics)
 	Added window to display all logs, and display selected log
 	Moved the Font Size buttons to upper left, and the S (for Skin) and X (for exit) to upper right
+
+0.0.3
+	Fixed typo on settings page (not instead of note)
+	Shortened button label for copying current note to clipboard
+	Converted most BeginVertical/BeginHorizontal to the new using scope
+	Fixed notes not being saved in the editor when saving a ship
+	Added notes persistence when reverting to the editor from flight
+	Fixed nullref when exiting the game while in flight mode

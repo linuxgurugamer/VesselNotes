@@ -184,7 +184,7 @@ namespace VesselNotesNS
 
         void onVesselDestroy(Vessel v)
         {
-            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselDestroy)
+            if (HighLogic.CurrentGame != null && HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings2>().onVesselDestroy)
             {
                 if (v != part.vessel) return;
                 string s = v.vesselName + " was destroyed";
@@ -499,8 +499,16 @@ namespace VesselNotesNS
                 return;
             Log.Info("LandingMonitor.Start");
             var notesModules = vessel.FindPartModulesImplementing<VesselNotesLogs>();
+            Log.Info("LandingMonitor.Start 2");
+
+            if (notesModules == null)
+                return;
+            Log.Info("LandingMonitor.Start 3");
+
             if (notesModules.Count == 0 || notesModules[0].vessel != this.vessel)
                 return;
+            Log.Info("LandingMonitor.Start 4");
+
             InvokeRepeating("WatchForLanding", 2.0f, 1f / ChecksPerSecond);
         }
         void LandingMonitorStop()

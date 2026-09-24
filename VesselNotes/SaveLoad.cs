@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 using static VesselNotesNS.RegisterToolbar;
 
 namespace VesselNotesNS
@@ -16,6 +11,7 @@ namespace VesselNotesNS
             base.OnLoad(node);
             if (HighLogic.CurrentGame == null)
                 return;
+            Log.Info("SaveLoad.OnLoad 1, node: " + node);
             if (!HighLogic.LoadedSceneIsEditor && vessel != null)
             {
                 if (vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
@@ -63,7 +59,8 @@ namespace VesselNotesNS
                                                     double gameDateTime = 0;
                                                     n.TryGetValue("GAMEDATETIME", ref gameDateTime);
 
-                                                    noteList.list.Add(new NOTE(title, note, guid, vesselId, privateNote, gameDateTime:gameDateTime));
+                                                    noteList.list.Add(new NOTE(title, note, guid, vesselId, privateNote, gameDateTime: gameDateTime));
+
                                                 }
                                             }
                                         }
@@ -112,15 +109,21 @@ namespace VesselNotesNS
                     }
                 }
             }
+            if (HighLogic.LoadedSceneIsEditor)
+                NotesPersistentData.OnSceneLoaded(GameScenes.EDITOR, ref noteList);
         }
 
         public override void OnSave(ConfigNode node)
         {
+            Log.Info("SaveLoad.OnSave 1");
             if (!HighLogic.LoadedSceneIsEditor)
             {
                 if (vessel == null || vessel.protoVessel == null || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
                     return;
             }
+
+            Log.Info("SaveLoad.OnSave 2, count: " + noteList.list.Count);
+            NotesPersistentData.OnSceneLoadRequested(GameScenes.EDITOR, noteList);
 
             ConfigNode vesselNode = new ConfigNode(NODENAME);
             node.AddValue("LISTGUID", noteList.listGuid);
@@ -161,8 +164,8 @@ namespace VesselNotesNS
                     note.AddValue("PRIVATENOTE", n.privateNote);
                     vesselNode.AddNode(note);
                 }
-                node.AddNode(vesselNode);
             }
+            node.AddNode(vesselNode);
 
             base.OnSave(node);
         }

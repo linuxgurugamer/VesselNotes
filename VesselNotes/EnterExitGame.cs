@@ -24,7 +24,7 @@ namespace VesselNotesNS
         public bool manualToggle = false;
         int enterExitWinId;
 
-        const float HEIGHT = 400;
+        const float HEIGHT = 400f;
         const float WIDTH = 500f;
 
         private Rect _windowRect = new Rect(50f, 25f, WIDTH, HEIGHT);
@@ -196,120 +196,123 @@ namespace VesselNotesNS
         bool enterNotes = false;
         internal void StartStopWin(int id)
         {
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(GlobalConfig.KspSkin ? "KSP Skin" : "Alt Skin", GUILayout.Width(90)))
+            using (new GUILayout.HorizontalScope())
             {
-                GlobalConfig.KspSkin = !GlobalConfig.KspSkin;
-                GlobalConfig.SaveCfg();
-            }
-            if (HighLogic.LoadedScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION)
-            {
-                if (GUILayout.Button(GlobalConfig.showAll ? "Show All" : "Show Last", GUILayout.Width(90)))
-                { GlobalConfig.showAll = !GlobalConfig.showAll; GlobalConfig.SaveCfg(); }
-                if (GlobalConfig.showAll)
+                if (GUILayout.Button(GlobalConfig.KspSkin ? "KSP Skin" : "Alt Skin", GUILayout.Width(90)))
                 {
-                    if (GUILayout.Button(GlobalConfig.showAscending ? "Ascending" : "Descending", GUILayout.Width(90)))
-                    { GlobalConfig.showAscending = !GlobalConfig.showAscending; GlobalConfig.SaveCfg(); }
+                    GlobalConfig.KspSkin = !GlobalConfig.KspSkin;
+                    GlobalConfig.SaveCfg();
                 }
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Show Vessel Logs", GUILayout.Width(150)))
+                if (HighLogic.LoadedScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION)
                 {
-                    ShowVesselLogs.InstantiateShowVesselLogsWindow();
-                    //VesselNotesLogs.CopyToClipboard(GameNote.notesList, GlobalConfig.showAscending, GlobalConfig.showAll);
-                }
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            if ((HighLogic.LoadedScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION) && !enterNotes)
-            {
-                contractPos = GUILayout.BeginScrollView(contractPos, GUILayout.Height(HEIGHT - 60));
-                if (GameNote.notesList.Count > 0)
-                {
+                    if (GUILayout.Button(GlobalConfig.showAll ? "Show All" : "Show Last", GUILayout.Width(90)))
+                    { GlobalConfig.showAll = !GlobalConfig.showAll; GlobalConfig.SaveCfg(); }
                     if (GlobalConfig.showAll)
                     {
-                        for (int i = 0; i < GameNote.notesList.Count; i++)
+                        if (GUILayout.Button(GlobalConfig.showAscending ? "Ascending" : "Descending", GUILayout.Width(90)))
+                        { GlobalConfig.showAscending = !GlobalConfig.showAscending; GlobalConfig.SaveCfg(); }
+                    }
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Show Vessel Logs", GUILayout.Width(150)))
+                    {
+                        ShowVesselLogs.InstantiateShowVesselLogsWindow();
+                        //VesselNotesLogs.CopyToClipboard(GameNote.notesList, GlobalConfig.showAscending, GlobalConfig.showAll);
+                    }
+                }
+            }
+            using (new GUILayout.HorizontalScope())
+            {
+                if ((HighLogic.LoadedScene >= GameScenes.SPACECENTER && lastScene <= GameScenes.TRACKSTATION) && !enterNotes)
+                {
+                    contractPos = GUILayout.BeginScrollView(contractPos, GUILayout.Height(HEIGHT - 60));
+                    if (GameNote.notesList.Count > 0)
+                    {
+                        if (GlobalConfig.showAll)
                         {
-                            GameNote l = GameNote.notesList[GlobalConfig.showAscending ? i : GameNote.notesList.Count - i - 1];
+                            for (int i = 0; i < GameNote.notesList.Count; i++)
+                            {
+                                GameNote l = GameNote.notesList[GlobalConfig.showAscending ? i : GameNote.notesList.Count - i - 1];
 
-                            var GameTimeText = KSPUtil.PrintDate(l.gameTime, includeTime: true);
-                            GUILayout.BeginHorizontal();
+                                var GameTimeText = KSPUtil.PrintDate(l.gameTime, includeTime: true);
+                                using (new GUILayout.HorizontalScope())
+                                {
 
-                            l.visible = GUILayout.Toggle(l.visible, GameTimeText);
-                            //GUILayout.Box(GameTimeText);
-                            GUILayout.EndHorizontal();
-                            //GUILayout.Label(GameTimeText);
-                            if (l.visible)
-                                GUILayout.TextArea(l.prePostGameNotes, myStyle);
-                            GUILayout.Space(10);
+                                    l.visible = GUILayout.Toggle(l.visible, GameTimeText);
+                                    //GUILayout.Box(GameTimeText);
+                                }
+                                //GUILayout.Label(GameTimeText);
+                                if (l.visible)
+                                    GUILayout.TextArea(l.prePostGameNotes, myStyle);
+                                GUILayout.Space(10);
+                            }
+                        }
+                        else
+                        {
+                            GUILayout.TextArea(GameNote.notesList[GameNote.notesList.Count - 1].prePostGameNotes, myStyle);
                         }
                     }
-                    else
+                    GUILayout.EndScrollView();
+                    GUILayout.EndHorizontal();
+                    GUILayout.FlexibleSpace();
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Close", GUILayout.Width(60)))
                     {
-                        GUILayout.TextArea(GameNote.notesList[GameNote.notesList.Count - 1].prePostGameNotes, myStyle);
+                        guiActive = false;
+                        manualToggle = false;
+                        gameStarted = false;
                     }
-                }
-                GUILayout.EndScrollView();
-                GUILayout.EndHorizontal();
-                GUILayout.FlexibleSpace();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Close", GUILayout.Width(60)))
-                {
-                    guiActive = false;
-                    manualToggle = false;
-                    gameStarted = false;
-                }
-                if (!gameStarted)
-                {
+                    if (!gameStarted)
+                    {
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button("Enter Notes", GUILayout.Width(120)))
+                            enterNotes = true;
+                    }
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Enter Notes", GUILayout.Width(120)))
-                        enterNotes = true;
-                }
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Copy to clipboard", GUILayout.Width(150)))
-                {
-                    VesselNotesLogs.CopyToClipboard(GameNote.notesList, GlobalConfig.showAscending, GlobalConfig.showAll);
-                }
-                GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Copy to clipboard", GUILayout.Width(150)))
+                    {
+                        VesselNotesLogs.CopyToClipboard(GameNote.notesList, GlobalConfig.showAscending, GlobalConfig.showAll);
+                    }
+                    GUILayout.FlexibleSpace();
 
-            }
-            else
-            {
-                prePostGameNotes = GUILayout.TextArea(prePostGameNotes, myStyle, GUILayout.Height(HEIGHT - 60));
-                GUILayout.EndHorizontal();
-                GUILayout.FlexibleSpace();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Cancel", GUILayout.Width(60)))
-                {
-                    guiActive = false;
-                    enterNotes = false;
                 }
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Clear", GUILayout.Width(60)))
+                else
                 {
-                    prePostGameNotes = "";
-                }
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Save & Close"))
-                {
-                    SaveNotes();
-                    notesSaved = false;
-                }
-                if (HighLogic.LoadedScene != GameScenes.MAINMENU)
-                {
+                    prePostGameNotes = GUILayout.TextArea(prePostGameNotes, myStyle, GUILayout.Height(HEIGHT - 60));
+                    GUILayout.EndHorizontal();
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Save & Exit game", GUILayout.Width(150)))
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Cancel", GUILayout.Width(60)))
+                    {
+                        guiActive = false;
+                        enterNotes = false;
+                    }
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Clear", GUILayout.Width(60)))
+                    {
+                        prePostGameNotes = "";
+                    }
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Save & Close"))
                     {
                         SaveNotes();
-                        notesSaved = true;
-                        GamePersistence.SaveGame("persistent", HighLogic.SaveFolder, SaveMode.OVERWRITE);
-                        HighLogic.LoadScene(GameScenes.MAINMENU);
+                        notesSaved = false;
                     }
+                    if (HighLogic.LoadedScene != GameScenes.MAINMENU)
+                    {
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button("Save & Exit game", GUILayout.Width(150)))
+                        {
+                            SaveNotes();
+                            notesSaved = true;
+                            GamePersistence.SaveGame("persistent", HighLogic.SaveFolder, SaveMode.OVERWRITE);
+                            HighLogic.LoadScene(GameScenes.MAINMENU);
+                        }
+                    }
+                    GUILayout.FlexibleSpace();
                 }
-                GUILayout.FlexibleSpace();
             }
-            GUILayout.EndHorizontal();
             guiActive = EnterExitGame.ShowControls(guiActive, _windowRect);
 
             GUI.DragWindow();

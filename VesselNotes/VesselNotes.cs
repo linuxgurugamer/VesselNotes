@@ -10,6 +10,8 @@ namespace VesselNotesNS
 {
     internal partial class VesselNotesLogs : PartModule
     {
+        internal static VesselNotesLogs Instance;
+
         // The rectangle for main window.
         [KSPField(isPersistant = true)]
         private Rect _windowRect = new Rect(50f, 25f, WIDTH, HEIGHT);
@@ -72,6 +74,8 @@ namespace VesselNotesNS
 
         void Start()
         {
+            Instance = this;
+
             if (vessel == null || HighLogic.LoadedSceneIsEditor || vessel.protoVessel.protoPartSnapshots[0].partName == "PotatoRoid" || vessel.isEVA)
                 return;
 
@@ -237,7 +241,7 @@ namespace VesselNotesNS
 
         void onDockingComplete(Part p1, Part p2)
         {
-
+            Log.Info("onDockingcomplete, part 1: " +  p1.name + " to part 2: " +  p2.name);
         }
 
         //GUIStyle myStyle = null;
@@ -291,89 +295,91 @@ namespace VesselNotesNS
 
             if (confirmDialog)
                 GUI.enabled = false;
-            GUILayout.BeginHorizontal();
-            GUILayout.EndHorizontal();
+            //GUILayout.BeginHorizontal();
+            //GUILayout.EndHorizontal();
 
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical(GUILayout.Width(NOTESELWIDTH));
-            GUILayout.BeginHorizontal();
-            var oldColor = GUI.backgroundColor;
-            GUI.backgroundColor = Color.green;
-            if (GUILayout.Button("New Log Entry", bstyle))
+            using (new GUILayout.HorizontalScope())
             {
-                string currentCrew = "";
-                if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().logCrewAlways)
-                    currentCrew = "Crew: " + getCurrentCrew(vessel);
-
-                logList.list.Add(new NOTE("Log #" + (logList.list.Count + 1).ToString(), VesselLog.GetLogInfo(vessel) + currentCrew, logList.listGuid));
-                SetSelectedLog(logList.list.Count + 1);
-                selectedLog = logList.list.Count - 1;
-            }
-            GUI.backgroundColor = oldColor;
-
-            GUILayout.EndHorizontal();
-
-            logTitleVector = GUILayout.BeginScrollView(logTitleVector, GUILayout.Width(NOTESELWIDTH), GUILayout.Height(SCROLLVIEWHEIGHT));
-
-            for (int i = 0; i < logList.list.Count; i++)
-            {
-                if (GUILayout.Button(logList.list[i].title,
-                    (selectedLog == i) ? buttonFontSel : buttonFont, GUILayout.Width(NOTES_SEL_DATA)))
+                using (new GUILayout.VerticalScope())
                 {
-                    SetSelectedLog(i);
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        var oldColor = GUI.backgroundColor;
+                        GUI.backgroundColor = Color.green;
+                        if (GUILayout.Button("New Log Entry", bstyle))
+                        {
+                            string currentCrew = "";
+                            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().logCrewAlways)
+                                currentCrew = "Crew: " + getCurrentCrew(vessel);
+
+                            logList.list.Add(new NOTE("Log #" + (logList.list.Count + 1).ToString(), VesselLog.GetLogInfo(vessel) + currentCrew, logList.listGuid));
+                            SetSelectedLog(logList.list.Count + 1);
+                            selectedLog = logList.list.Count - 1;
+                        }
+                        GUI.backgroundColor = oldColor;
+
+                    }
+
+                    logTitleVector = GUILayout.BeginScrollView(logTitleVector, GUILayout.Width(NOTESELWIDTH), GUILayout.Height(SCROLLVIEWHEIGHT));
+
+                    for (int i = 0; i < logList.list.Count; i++)
+                    {
+                        if (GUILayout.Button(logList.list[i].title,
+                            (selectedLog == i) ? buttonFontSel : buttonFont, GUILayout.Width(NOTES_SEL_DATA)))
+                        {
+                            SetSelectedLog(i);
+                        }
+                    }
+                    // following in case note is deleted
+                    if (selectedLog >= logList.list.Count)
+                    {
+                        SetSelectedLog(0);
+                    }
+                    GUILayout.EndScrollView();
+                }
+                using (new GUILayout.VerticalScope())
+                {
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        if (logList.list.Count > 0)
+                        {
+                            GUILayout.Label("Title: ");
+                            logList.list[selectedLog].title = GUILayout.TextField(logList.list[selectedLog].title, GUILayout.Width(NOTESELWIDTH));
+                        }
+
+                        GUILayout.FlexibleSpace();
+                        if (GlobalConfig.KspSkin)
+                        {
+                            GUILayout.Label("Autolog:");
+                            noteList.autolog = GUILayout.Toggle(noteList.autolog, "");
+                            GUILayout.Space(25);
+                        }
+                        else
+                        {
+                            noteList.autolog = GUILayout.Toggle(noteList.autolog, "Autolog");
+                            GUILayout.Label(" ");
+                        }
+                        if (HighLogic.LoadedSceneIsFlight && GUILayout.Button("Vessel Notes", GUILayout.Width(90)))
+                        {
+                            logMode = false;
+                            _windowRect.width = WIDTH; ;
+                            _windowRect.height = HEIGHT;
+
+                        }
+                    }
+                    // Text area with scroll bar
+                    logVector = GUILayout.BeginScrollView(noteVector,
+                        GUILayout.Width(LOGSCROLLVIEWWIDTH), GUILayout.Height(LOGVIEWENTRY));
+                    if (logList.list.Count > 0)
+                    {
+                        logList.list[selectedLog].note = GUILayout.TextArea(logList.list[selectedLog].note, EnterExitGame.myStyle,
+                        GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(LOGVIEWENTRY));
+                    }
+                    else
+                        GUILayout.Label(" ");
+                    GUILayout.EndScrollView();
                 }
             }
-            // following in case note is deleted
-            if (selectedLog >= logList.list.Count)
-            {
-                SetSelectedLog(0);
-            }
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
-
-            GUILayout.BeginVertical(GUILayout.Width(NOTESELWIDTH));
-            GUILayout.BeginHorizontal();
-            if (logList.list.Count > 0)
-            {
-                GUILayout.Label("Title: ");
-                logList.list[selectedLog].title = GUILayout.TextField(logList.list[selectedLog].title, GUILayout.Width(NOTESELWIDTH));
-            }
-
-            GUILayout.FlexibleSpace();
-            if (GlobalConfig.KspSkin)
-            {
-                GUILayout.Label("Autolog:");
-                noteList.autolog = GUILayout.Toggle(noteList.autolog, "");
-                GUILayout.Space(25);
-            }
-            else
-            {
-                noteList.autolog = GUILayout.Toggle(noteList.autolog, "Autolog");
-                GUILayout.Label(" ");
-            }
-            if (HighLogic.LoadedSceneIsFlight && GUILayout.Button("Vessel Notes", GUILayout.Width(90)))
-            {
-                logMode = false;
-                _windowRect.width = WIDTH; ;
-                _windowRect.height = HEIGHT;
-
-            }
-            GUILayout.EndHorizontal();
-
-            // Text area with scroll bar
-            logVector = GUILayout.BeginScrollView(noteVector,
-                GUILayout.Width(LOGSCROLLVIEWWIDTH), GUILayout.Height(LOGVIEWENTRY));
-            if (logList.list.Count > 0)
-            {
-                logList.list[selectedLog].note = GUILayout.TextArea(logList.list[selectedLog].note, EnterExitGame.myStyle,
-                GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(LOGVIEWENTRY));
-            }
-            else
-                GUILayout.Label(" ");
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-
             if (logList.list.Count > 0 &&
                 (currentLogNoteForComparision != logList.list[selectedLog].note ||
                 currentLogTitleForComparision != logList.list[selectedLog].title))
@@ -381,24 +387,25 @@ namespace VesselNotesNS
                 SyncAllNotes(false, true);
             }
             GUILayout.FlexibleSpace();
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (logList.list.Count > 0)
+            using (new GUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Copy Logs to clipboard", GUILayout.Width(200)))
+                GUILayout.FlexibleSpace();
+                if (logList.list.Count > 0)
                 {
-                    CopyToClipboard(true, logList.list);
+                    if (GUILayout.Button("Copy Logs to clipboard", GUILayout.Width(200)))
+                    {
+                        CopyToClipboard(true, logList.list);
+                    }
+                    GUILayout.FlexibleSpace();
+                }
+                if (GUILayout.Button("Close", GUILayout.Width(90)))
+                {
+                    CloseWin();
+
                 }
                 GUILayout.FlexibleSpace();
-            }
-            if (GUILayout.Button("Close", GUILayout.Width(90)))
-            {
-                CloseWin();
 
             }
-            GUILayout.FlexibleSpace();
-
-            GUILayout.EndHorizontal();
             GUI.enabled = true;
 
         }
@@ -406,101 +413,108 @@ namespace VesselNotesNS
         {
             // Set the control name for later usage.
             GUI.SetNextControlName("notes");
-            GUILayout.BeginHorizontal();
-            var oldColor = GUI.backgroundColor;
-            GUI.backgroundColor = Color.green;
-            if (GUILayout.Button("New Note", bstyle, GUILayout.Width(120)))
+            using (new GUILayout.HorizontalScope())
             {
-                noteList.list.Add(new NOTE("Note #" + (noteList.list.Count + 1).ToString(), "", noteList.listGuid));
-                SetSelectedNote(noteList.list.Count - 1);
-                SyncAllNotes(true, false);
-            }
-            GUI.backgroundColor = oldColor;
-
-            GUILayout.FlexibleSpace();
-            if (HighLogic.LoadedSceneIsFlight && GUILayout.Button("Vessel Log", GUILayout.Width(90)))
-            {
-                logMode = true;
-                _windowRect.width += LOGWIDTHADD;
-            }
-
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical(GUILayout.Width(NOTESELWIDTH));
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Private");
-            GUILayout.EndHorizontal();
-            titleVector = GUILayout.BeginScrollView(titleVector, GUILayout.Width(NOTESELWIDTH), GUILayout.Height(SCROLLVIEWHEIGHT));
-
-            for (int i = 0; i < noteList.list.Count; i++)
-            {
-                GUILayout.BeginHorizontal();
-                if (noteList.list[i].locked)
+                var oldColor = GUI.backgroundColor;
+                GUI.backgroundColor = Color.green;
+                if (GUILayout.Button("New Note", bstyle, GUILayout.Width(120)))
                 {
-                    GUILayout.Label("Lck");
+                    noteList.list.Add(new NOTE("Note #" + (noteList.list.Count + 1).ToString(), "", noteList.listGuid));
+                    SetSelectedNote(noteList.list.Count - 1);
+                    SyncAllNotes(true, false);
                 }
-                else
+                GUI.backgroundColor = oldColor;
+
+                GUILayout.FlexibleSpace();
+                if (HighLogic.LoadedSceneIsFlight && GUILayout.Button("Vessel Log", GUILayout.Width(90)))
                 {
-                    if (!noteList.list[i].privateNote)
+                    logMode = true;
+                    _windowRect.width += LOGWIDTHADD;
+                }
+
+            }
+            using (new GUILayout.HorizontalScope())
+            {
+                using (new GUILayout.VerticalScope(GUILayout.Width(NOTESELWIDTH)))
+                {
+                    using (new GUILayout.HorizontalScope())
                     {
-                        bool b = GUILayout.Toggle(noteList.list[i].privateNote, "");
-                        if (b)
+                        GUILayout.Label("Private");
+                    }
+                    titleVector = GUILayout.BeginScrollView(titleVector, GUILayout.Width(NOTESELWIDTH), GUILayout.Height(SCROLLVIEWHEIGHT));
+
+                    for (int i = 0; i < noteList.list.Count; i++)
+                    {
+                        using (new GUILayout.HorizontalScope())
                         {
-                            SetSelectedNote(i);
-                            if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().confirmLock)
+                            if (noteList.list[i].locked)
                             {
-                                confirmDialog = true;
-                                confirmNote = i;
-                                _confirmRect.x = (Screen.width - _confirmRect.width) / 2f;
-                                _confirmRect.y = (Screen.height - _confirmRect.height) / 2f;
+                                GUILayout.Label("Lck");
                             }
                             else
-                                noteList.list[i].privateNote = true;
+                            {
+                                if (!noteList.list[i].privateNote)
+                                {
+                                    bool b = GUILayout.Toggle(noteList.list[i].privateNote, "");
+                                    if (b)
+                                    {
+                                        SetSelectedNote(i);
+                                        if (HighLogic.CurrentGame.Parameters.CustomParams<VN_Settings>().confirmLock)
+                                        {
+                                            confirmDialog = true;
+                                            confirmNote = i;
+                                            _confirmRect.x = (Screen.width - _confirmRect.width) / 2f;
+                                            _confirmRect.y = (Screen.height - _confirmRect.height) / 2f;
+                                        }
+                                        else
+                                            noteList.list[i].privateNote = true;
+                                    }
+                                }
+                                else
+                                    GUILayout.Toggle(noteList.list[i].privateNote, "");
+                            }
+                            if (GUILayout.Button(noteList.list[i].title,
+                                (selectedNote == i) ? buttonFontSel : buttonFont, GUILayout.Width(NOTES_SEL_DATA)))
+                            {
+                                SetSelectedNote(i);
+                            }
                         }
                     }
-                    else
-                        GUILayout.Toggle(noteList.list[i].privateNote, "");
+                    // following in case note is deleted
+                    if (selectedNote >= noteList.list.Count && noteList.list.Count > 0)
+                    {
+                        SetSelectedNote(noteList.list.Count - 1);
+                    }
+                    GUILayout.EndScrollView();
                 }
-                if (GUILayout.Button(noteList.list[i].title,
-                    (selectedNote == i) ? buttonFontSel : buttonFont, GUILayout.Width(NOTES_SEL_DATA)))
+
+                using (new GUILayout.VerticalScope(GUILayout.Width(NOTESELWIDTH)))
                 {
-                    SetSelectedNote(i);
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        GUILayout.Label("Title: ");
+                        if (noteList.list.Count > 0 && selectedNote >= 0 && selectedNote < noteList.list.Count)
+                            noteList.list[selectedNote].title = GUILayout.TextField(noteList.list[selectedNote].title, GUILayout.Width(NOTESELWIDTH));
+                        else
+                            GUILayout.Label(" ");
+                        GUILayout.FlexibleSpace();
+                    }
+
+                    // Text area with scroll bar
+                    noteVector = GUILayout.BeginScrollView(noteVector,
+                        GUILayout.Width(NOTESCROLLVIEWWIDTH), GUILayout.Height(SCROLLVIEWENTRY));
+                    if (noteList.list.Count > 0)
+                    {
+                        if (selectedNote >= 0 && selectedNote < noteList.list.Count)
+                            noteList.list[selectedNote].note = GUILayout.TextArea(noteList.list[selectedNote].note, EnterExitGame.myStyle,
+                                GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(SCROLLVIEWENTRY));
+                    }
+                    else
+                        GUILayout.Label(" ");
+
+                    GUILayout.EndScrollView();
                 }
-                GUILayout.EndHorizontal();
             }
-            // following in case note is deleted
-            if (selectedNote >= noteList.list.Count && noteList.list.Count > 0)
-            {
-                SetSelectedNote(noteList.list.Count - 1);
-            }
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
-
-            GUILayout.BeginVertical(GUILayout.Width(NOTESELWIDTH));
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Title: ");
-            if (noteList.list.Count > 0 && selectedNote >= 0 && selectedNote < noteList.list.Count)
-                noteList.list[selectedNote].title = GUILayout.TextField(noteList.list[selectedNote].title, GUILayout.Width(NOTESELWIDTH));
-            else
-                GUILayout.Label(" ");
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-
-            // Text area with scroll bar
-            noteVector = GUILayout.BeginScrollView(noteVector,
-                GUILayout.Width(NOTESCROLLVIEWWIDTH), GUILayout.Height(SCROLLVIEWENTRY));
-            if (noteList.list.Count > 0)
-            {
-                if (selectedNote >= 0 && selectedNote < noteList.list.Count)
-                    noteList.list[selectedNote].note = GUILayout.TextArea(noteList.list[selectedNote].note, EnterExitGame.myStyle,
-                        GUILayout.MinWidth(NOTEWIDTH), GUILayout.MinHeight(SCROLLVIEWENTRY));
-            }
-            else
-                GUILayout.Label(" ");
-
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
 
             if (noteList.list.Count > 0 && selectedNote >= 0 && selectedNote < noteList.list.Count &&
                 (currentNoteForComparision != noteList.list[selectedNote].note ||
@@ -508,50 +522,52 @@ namespace VesselNotesNS
             {
                 SyncAllNotes(true, false);
             }
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (noteList.list.Count > 0)
+            using (new GUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Copy all notes to clipboard", GUILayout.Width(200)))
-                {
-                    CopyToClipboard(false, noteList.list);
-                }
-
                 GUILayout.FlexibleSpace();
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (noteList.list.Count > 0)
-            {
-                if (selectedNote >= 0 && selectedNote < noteList.list.Count)
+                if (noteList.list.Count > 0)
                 {
-                    if (GUILayout.Button("Delete Note", GUILayout.Width(90)))
+                    if (GUILayout.Button("Copy all notes to clipboard", GUILayout.Width(200)))
                     {
-                        noteList.list.Remove(noteList.list[selectedNote]);
-                        if (selectedNote > noteList.list.Count)
-                            selectedNote = noteList.list.Count - 1;
-                        SetSelectedNote(selectedNote);
+                        CopyToClipboard(false, noteList.list);
                     }
-                }
-                GUILayout.FlexibleSpace();
-            }
-            if (noteList.list.Count > 0)
-            {
-                if (GUILayout.Button("Copy current note to clipboard", GUILayout.Width(200)))
-                {
-                    CopyToClipboard(false, noteList.list, selectedNote);
-                }
-                GUILayout.FlexibleSpace();
-            }
-            if (GUILayout.Button("Close", GUILayout.Width(90)))
-            {
-                CloseWin();
-            }
-            GUILayout.FlexibleSpace();
 
-            GUILayout.EndHorizontal();
+                    GUILayout.FlexibleSpace();
+                }
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                if (noteList.list.Count > 0)
+                {
+                    if (selectedNote >= 0 && selectedNote < noteList.list.Count)
+                    {
+                        if (GUILayout.Button("Delete Note", GUILayout.Width(90)))
+                        {
+                            noteList.list.Remove(noteList.list[selectedNote]);
+                            if (selectedNote > noteList.list.Count)
+                                selectedNote = noteList.list.Count - 1;
+                            SetSelectedNote(selectedNote);
+                        }
+                    }
+                    GUILayout.FlexibleSpace();
+                }
+                if (noteList.list.Count > 0)
+                {
+                    if (GUILayout.Button("Copy current to clipboard", GUILayout.Width(200)))
+                    {
+                        CopyToClipboard(false, noteList.list, selectedNote);
+                    }
+                    GUILayout.FlexibleSpace();
+                }
+                if (GUILayout.Button("Close", GUILayout.Width(90)))
+                {
+                    CloseWin();
+                }
+                GUILayout.FlexibleSpace();
+
+            }
         }
 
         void CloseWin()
